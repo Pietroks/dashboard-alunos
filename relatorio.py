@@ -202,23 +202,30 @@ with tab_cidade:
     
     df_cidade = df_filtrado.groupby(["Chave", "Cidade", "Estado", "Latitude", "Longitude"]).size().reset_index(name="Qtd")
 
-    # --- INÍCIO DA CORREÇÃO DE SEGURANÇA DE DADOS (VERSÃO 2) ---
+    # --- INÍCIO DA CORREÇÃO FINAL DE DADOS ---
 
-    # 1. Garante que as colunas de coordenadas são do tipo numérico.
-    #    Valores inválidos (texto, etc.) se tornarão Nulos (NaT).
+    # 1. (NOVO) Garante que as colunas são do tipo string e substitui vírgulas por pontos.
+    #    Isso resolve o problema de formato numérico regional (ex: -28,3 vs -28.3).
+    if 'Latitude' in df_cidade.columns and 'Longitude' in df_cidade.columns:
+        df_cidade['Latitude'] = df_cidade['Latitude'].astype(str).str.replace(',', '.', regex=False)
+        df_cidade['Longitude'] = df_cidade['Longitude'].astype(str).str.replace(',', '.', regex=False)
+
+    # 2. Converte as colunas já limpas para o tipo numérico.
+    #    Valores inválidos (texto, etc.) se tornarão Nulos (NaN).
     df_cidade['Latitude'] = pd.to_numeric(df_cidade['Latitude'], errors='coerce')
     df_cidade['Longitude'] = pd.to_numeric(df_cidade['Longitude'], errors='coerce')
 
-    # 2. Remove qualquer linha que tenha coordenadas nulas.
+    # 3. Remove qualquer linha que tenha coordenadas nulas.
     df_cidade.dropna(subset=["Latitude", "Longitude"], inplace=True)
     
-    # 3. (NOVO E CRUCIAL) Filtra os dados para manter apenas coordenadas dentro do intervalo geográfico válido.
-    df_cidade = df_cidade[df_cidade['Latitude'].between(-90, 90)]
-    df_cidade = df_cidade[df_cidade['Longitude'].between(-180, 180)]
+    # 4. Filtra os dados para manter apenas coordenadas dentro do intervalo geográfico válido.
+    if not df_cidade.empty:
+        df_cidade = df_cidade[df_cidade['Latitude'].between(-90, 90)]
+        df_cidade = df_cidade[df_cidade['Longitude'].between(-180, 180)]
 
     # --- FIM DA CORREÇÃO ---
 
-    # 4. Verifica se, após a limpeza completa, ainda existem dados para mostrar.
+    # 5. Verifica se, após a limpeza completa, ainda existem dados para mostrar.
     if df_cidade.empty:
         st.warning("Não há dados de cidades com coordenadas geográficas válidas para exibir com os filtros atuais.")
     else:
@@ -287,5 +294,6 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
+
 
 
