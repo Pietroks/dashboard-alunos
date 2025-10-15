@@ -19,9 +19,9 @@ COR_KPI = "#FFD700"
 # ========================
 # ARQUIVOS      
 # ========================
-ARQUIVO_BASE = r"C:/Users/Pietrok/Desktop/python/basededados.csv"
-ARQUIVO_COORD = r"C:/Users/Pietrok/Desktop/python/cidades_coordenadas.csv"
-# LOGO_EMPRESA = r"Y:/COMPARTILHADO/Eduardo/RELATORIOS_CIDADES/NOVO/BASEDEDADOS/Dashboard_Unintese/logo-unintese-simples.png"
+ARQUIVO_BASE = r"basededados.csv"
+ARQUIVO_COORD = r"cidades_coordenadas.csv"
+LOGO_EMPRESA = r"logo-unintese-simples.png"
 
 # ========================
 # CARREGAR BASE DE DADOS
@@ -214,3 +214,4 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
+
