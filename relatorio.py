@@ -105,6 +105,9 @@ st.markdown(f"""
     .stTable tbody tr td {{ color: {COR_TEXTO}; background-color: {COR_FUNDO}; }}
     .stTabs [role="tablist"] button {{ color: {COR_TEXTO}; }}
     h2, h3 {{ color: {COR_TEXTO}; }}
+    header {{
+        visibility: hidden;
+    }}  
     </style>
 """, unsafe_allow_html=True)
 
