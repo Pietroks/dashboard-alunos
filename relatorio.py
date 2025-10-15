@@ -1,30 +1,44 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import gspread
+from gspread_dataframe import get_as_dataframe
 
 # ========================
 # FUNÇÃO DE LOGIN / SENHA
 # ========================
 def check_password():
-    def password_entered():
-        if st.session_state['password'] == st.secrets['password']:
-            st.session_state['password_correct'] = True
-            del st.session_state['password']
-        else:
-            st.session_state['password_correct'] = False
+    """Retorna True se o usuário inseriu a senha correta."""
     
-    if 'password_correct' not in st.session_state
-        st.text_input('Digite a senha para acessar:', type="password", on_change=password_entered, key="password")
+    def password_entered():
+        """Verifica se a senha inserida pelo usuário está correta."""
+        if st.session_state["password"] == st.secrets["password"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Não manter a senha na memória
+        else:
+            st.session_state["password_correct"] = False
+
+    # CORREÇÃO: Adicionado ':' no final do if
+    if "password_correct" not in st.session_state:
+        # Primeira execução, mostrar o campo de senha.
+        st.text_input(
+            "Digite a senha para acessar:", type="password", on_change=password_entered, key="password"
+        )
         return False
-    elif not st.session_state['password_correct']:
-        st.text_input('Digite a senha para acessar:', type="password", on_change=password_entered, key="password")
-        st.error('Senha incorreta. Tente novamente.')
+    elif not st.session_state["password_correct"]:
+        # Senha incorreta, mostrar mensagem de erro.
+        st.text_input(
+            "Digite a senha para acessar:", type="password", on_change=password_entered, key="password"
+        )
+        st.error("😕 Senha incorreta. Tente novamente.")
         return False
     else:
+        # Senha correta, o app pode continuar.
         return True
 
-if not check_password():    
-    st.stop()
+# Verificação de senha. O resto do seu código só roda se a função retornar True.
+if not check_password():
+    st.stop() # Interrompe a execução do app se a senha estiver incorreta.
 
 # ========================
 # CONFIGURAÇÃO DA PÁGINA
@@ -38,37 +52,45 @@ COR_LARANJA = "#E85112"
 COR_ROXO = "#703D94"
 COR_FUNDO = "#000000"
 COR_TEXTO = "#FFFFFF"
-COR_KPI = "#FFD700"
 
 # ========================
-# ARQUIVOS      
-# ========================
-ARQUIVO_BASE = "basededados.csv"
-ARQUIVO_COORD = "cidades_coordenadas.csv"
-LOGO_EMPRESA = r"logo-unintese-simples.png"
-
-# ========================
-# CARREGAR BASE DE DADOS
+# CARREGAR DADOS DO GOOGLE SHEETS (MÉTODO SEGURO)
 # ========================
 try:
-    dados = pd.read_csv(ARQUIVO_BASE, encoding="utf-8", sep=";")
-except:
-    dados = pd.read_csv(ARQUIVO_BASE, encoding="utf-8", sep=",")
+    creds_dict = st.secrets['gcp_service_account']
+    sa = gspread.service_account_from_dict(creds_dict)
+    spreadsheet = sa.open('basededados') # IMPORTANTE: 'basededados' é o NOME da sua planilha no Google Drive
+    worksheet_base = spreadsheet.worksheet('basededados') # Nome da ABA com dados dos alunos
+    worksheet_coords = spreadsheet.worksheet('coordenadas') # Nome da ABA com coordenadas
 
-coordenadas = pd.read_csv(ARQUIVO_COORD, encoding="utf-8")
+    dados = get_as_dataframe(worksheet_base)
+    coordenadas = get_as_dataframe(worksheet_coords)
+
+    dados.dropna(axis=1, how='all', inplace=True)
+    coordenadas.dropna(axis=1, how='all', inplace=True)
+
+except Exception as e:
+    st.error(f"Erro ao carregar dados do Google Sheets: {e}")
+    st.info("Verifique se as credenciais 'gcp_service_account' estão nos Segredos do Streamlit e se os nomes da planilha e das abas estão corretos.")
+    st.stop()
 
 # ========================
 # NORMALIZAR CHAVES
 # ========================
-dados["Chave"] = (dados["Cidade"].str.strip().str.upper() + " - " + dados["Estado"].str.strip().str.upper())
-coordenadas["Chave"] = coordenadas["Chave"].str.strip().str.upper()
-dados = dados.merge(coordenadas, on="Chave", how="left")
+if "Cidade" in dados.columns and "Estado" in dados.columns and "Chave" in coordenadas.columns:
+    dados["Chave"] = (dados["Cidade"].astype(str).str.strip().str.upper() + " - " + dados["Estado"].astype(str).str.strip().str.upper())
+    coordenadas["Chave"] = coordenadas["Chave"].astype(str).str.strip().str.upper()
+    dados = dados.merge(coordenadas, on="Chave", how="left")
+else:
+    st.error("Colunas 'Cidade', 'Estado' ou 'Chave' não encontradas nas planilhas.")
+    st.stop()
 
 # ========================
 # COLUNAS COMO STRING
 # ========================
 for col in ["Estado", "Cidade", "Tipo", "Situacao do contrato", "Curso"]:
-    dados[col] = dados[col].astype(str)
+    if col in dados.columns:
+        dados[col] = dados[col].astype(str)
 
 # ========================
 # DARK MODE CSS
@@ -99,6 +121,8 @@ st.title("📊 Dashboard de Alunos")
 # ========================
 # BARRA LATERAL
 # ========================
+LOGO_EMPRESA = "logo-unintese-simples.png"
+
 st.sidebar.image(LOGO_EMPRESA, use_container_width=True)
 st.sidebar.markdown(f"<div style='padding:10px; border-radius:5px'>", unsafe_allow_html=True)
 
