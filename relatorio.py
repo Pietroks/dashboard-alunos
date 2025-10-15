@@ -199,23 +199,43 @@ with tab_geral:
 # ========================
 with tab_cidade:
     st.subheader("📍 Distribuição de alunos por cidade")
+    
+    # Agrupa os dados como antes
     df_cidade = df_filtrado.groupby(["Chave", "Cidade", "Estado", "Latitude", "Longitude"]).size().reset_index(name="Qtd")
-    df_cidade = df_cidade.dropna(subset=["Latitude","Longitude"])
-    mapa_bolhas = px.scatter_mapbox(df_cidade, lat="Latitude", lon="Longitude", size="Qtd",
-                                    hover_name="Cidade",
-                                    hover_data={"Estado":True,"Qtd":True},
-                                    color="Qtd",
-                                    color_continuous_scale=[COR_LARANJA, COR_ROXO],
-                                    size_max=35,
-                                    zoom=3,
-                                    height=600)
-    mapa_bolhas.update_layout(mapbox_style="open-street-map",
-                              margin={"r":0,"t":0,"l":0,"b":0},
-                              paper_bgcolor=COR_FUNDO,
-                              plot_bgcolor=COR_FUNDO,
-                              font_color=COR_TEXTO)
-    st.plotly_chart(mapa_bolhas, use_container_width=True)
 
+    # --- INÍCIO DA CORREÇÃO DE SEGURANÇA DE DADOS ---
+
+    # 1. Garante que as colunas de coordenadas são do tipo numérico.
+    #    O 'errors='coerce'' transforma qualquer valor inválido (texto, etc.) em Nulo (NaT).
+    df_cidade['Latitude'] = pd.to_numeric(df_cidade['Latitude'], errors='coerce')
+    df_cidade['Longitude'] = pd.to_numeric(df_cidade['Longitude'], errors='coerce')
+
+    # 2. Remove qualquer linha que tenha ficado com coordenadas nulas após a conversão.
+    df_cidade.dropna(subset=["Latitude", "Longitude"], inplace=True)
+    
+    # --- FIM DA CORREÇÃO ---
+
+    # 3. Verifica se, após a limpeza, ainda existem dados para mostrar.
+    if df_cidade.empty:
+        st.warning("Não há dados de cidades com coordenadas geográficas para exibir com os filtros atuais.")
+    else:
+        # Se houver dados válidos, cria e exibe o mapa normalmente.
+        mapa_bolhas = px.scatter_mapbox(df_cidade, lat="Latitude", lon="Longitude", size="Qtd",
+                                        hover_name="Cidade",
+                                        hover_data={"Estado":True,"Qtd":True},
+                                        color="Qtd",
+                                        color_continuous_scale=[COR_LARANJA, COR_ROXO],
+                                        size_max=35,
+                                        zoom=3,
+                                        height=600)
+        mapa_bolhas.update_layout(mapbox_style="open-street-map",
+                                  margin={"r":0,"t":0,"l":0,"b":0},
+                                  paper_bgcolor=COR_FUNDO,
+                                  plot_bgcolor=COR_FUNDO,
+                                  font_color=COR_TEXTO)
+        st.plotly_chart(mapa_bolhas, use_container_width=True)
+
+    # O código do gráfico de barras continua o mesmo
     st.subheader(f"🏙️ Top {top_n_cidades} Cidades com mais alunos")
     top_cidades = df_filtrado.groupby("Cidade").size().reset_index(name="Qtd Alunos")
     top_cidades = top_cidades.sort_values(by="Qtd Alunos", ascending=False).head(top_n_cidades)
@@ -265,3 +285,4 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
+
