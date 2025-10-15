@@ -200,63 +200,24 @@ with tab_geral:
 with tab_cidade:
     st.subheader("📍 Distribuição de alunos por cidade")
     
+    # Agrupa os dados como antes
     df_cidade = df_filtrado.groupby(["Chave", "Cidade", "Estado", "Latitude", "Longitude"]).size().reset_index(name="Qtd")
 
-    # --- INÍCIO DA CORREÇÃO FINAL DE DADOS ---
-
-    # 1. (NOVO) Garante que as colunas são do tipo string e substitui vírgulas por pontos.
-    #    Isso resolve o problema de formato numérico regional (ex: -28,3 vs -28.3).
-    if 'Latitude' in df_cidade.columns and 'Longitude' in df_cidade.columns:
-        df_cidade['Latitude'] = df_cidade['Latitude'].astype(str).str.replace(',', '.', regex=False)
-        df_cidade['Longitude'] = df_cidade['Longitude'].astype(str).str.replace(',', '.', regex=False)
-
-    # 2. Converte as colunas já limpas para o tipo numérico.
-    #    Valores inválidos (texto, etc.) se tornarão Nulos (NaN).
-    df_cidade['Latitude'] = pd.to_numeric(df_cidade['Latitude'], errors='coerce')
-    df_cidade['Longitude'] = pd.to_numeric(df_cidade['Longitude'], errors='coerce')
-
-    # 3. Remove qualquer linha que tenha coordenadas nulas.
-    df_cidade.dropna(subset=["Latitude", "Longitude"], inplace=True)
+    # --- INÍCIO DO CÓDIGO DE DIAGNÓSTICO ---
     
-    # 4. Filtra os dados para manter apenas coordenadas dentro do intervalo geográfico válido.
-    if not df_cidade.empty:
-        df_cidade = df_cidade[df_cidade['Latitude'].between(-90, 90)]
-        df_cidade = df_cidade[df_cidade['Longitude'].between(-180, 180)]
+    st.error("INFORMAÇÕES DE DIAGNÓSTICO - COPIE E ME ENVIE O QUE APARECER ABAIXO:")
+    
+    st.subheader("1. Tipos de dados recebidos do Google Sheets:")
+    st.write(df_cidade[['Latitude', 'Longitude']].dtypes)
 
-    # --- FIM DA CORREÇÃO ---
+    st.subheader("2. Amostra dos dados de coordenadas (primeiras 20 linhas):")
+    st.dataframe(df_cidade[['Cidade', 'Latitude', 'Longitude']].head(20))
 
-    # 5. Verifica se, após a limpeza completa, ainda existem dados para mostrar.
-    if df_cidade.empty:
-        st.warning("Não há dados de cidades com coordenadas geográficas válidas para exibir com os filtros atuais.")
-    else:
-        # Se houver dados válidos, cria e exibe o mapa.
-        mapa_bolhas = px.scatter_mapbox(df_cidade, lat="Latitude", lon="Longitude", size="Qtd",
-                                        hover_name="Cidade",
-                                        hover_data={"Estado":True,"Qtd":True},
-                                        color="Qtd",
-                                        color_continuous_scale=[COR_LARANJA, COR_ROXO],
-                                        size_max=35,
-                                        zoom=3,
-                                        height=600)
-        mapa_bolhas.update_layout(mapbox_style="open-street-map",
-                                  margin={"r":0,"t":0,"l":0,"b":0},
-                                  paper_bgcolor=COR_FUNDO,
-                                  plot_bgcolor=COR_FUNDO,
-                                  font_color=COR_TEXTO)
-        st.plotly_chart(mapa_bolhas, use_container_width=True)
+    # --- FIM DO CÓDIGO DE DIAGNÓSTICO ---
 
-    # O código do gráfico de barras continua o mesmo
-    st.subheader(f"🏙️ Top {top_n_cidades} Cidades com mais alunos")
-    top_cidades = df_filtrado.groupby("Cidade").size().reset_index(name="Qtd Alunos")
-    top_cidades = top_cidades.sort_values(by="Qtd Alunos", ascending=False).head(top_n_cidades)
-    fig_top_cidades = px.bar(top_cidades, x="Qtd Alunos", y="Cidade", orientation="h",
-                             text="Qtd Alunos", color_discrete_sequence=[COR_ROXO])
-    fig_top_cidades.update_traces(texttemplate='%{text:,}'.replace(',', '.'), textfont=dict(color=COR_TEXTO))
-    fig_top_cidades.update_layout(yaxis={'categoryorder':'total ascending'},
-                                  paper_bgcolor=COR_FUNDO,
-                                  plot_bgcolor=COR_FUNDO,
-                                  font_color=COR_TEXTO)
-    st.plotly_chart(fig_top_cidades, use_container_width=True)
+
+    # O restante do código do mapa e do gráfico de barras fica desativado temporariamente
+    st.info("O mapa está desativado durante o diagnóstico.")
 # ========================
 # ABA ESTADOS
 # ========================
@@ -294,6 +255,7 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
+
 
 
 
