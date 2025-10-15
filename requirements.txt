@@ -4,3 +4,4 @@ plotly
 geopy
 gspread
 gspread-dataframe
+streamlit-authenticator
