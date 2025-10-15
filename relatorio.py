@@ -3,6 +3,30 @@ import pandas as pd
 import plotly.express as px
 
 # ========================
+# FUNÇÃO DE LOGIN / SENHA
+# ========================
+def check_password():
+    def password_entered():
+        if st.session_state['password'] == st.secrets['password']:
+            st.session_state['password_correct'] = True
+            del st.session_state['password']
+        else:
+            st.session_state['password_correct'] = False
+    
+    if 'password_correct' not in st.session_state
+        st.text_input('Digite a senha para acessar:', type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state['password_correct']:
+        st.text_input('Digite a senha para acessar:', type="password", on_change=password_entered, key="password")
+        st.error('Senha incorreta. Tente novamente.')
+        return False
+    else:
+        return True
+
+if not check_password():    
+    st.stop()
+
+# ========================
 # CONFIGURAÇÃO DA PÁGINA
 # ========================
 st.set_page_config(page_title="Dashboard Acadêmica", layout="wide")
@@ -21,7 +45,7 @@ COR_KPI = "#FFD700"
 # ========================
 ARQUIVO_BASE = "basededados.csv"
 ARQUIVO_COORD = "cidades_coordenadas.csv"
-LOGO_EMPRESA = "logo-unintese-simples.png"
+LOGO_EMPRESA = r"logo-unintese-simples.png"
 
 # ========================
 # CARREGAR BASE DE DADOS
@@ -214,6 +238,3 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
-
-
-
