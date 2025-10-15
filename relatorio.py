@@ -75,7 +75,7 @@ st.title("📊 Dashboard de Alunos")
 # ========================
 # BARRA LATERAL
 # ========================
-# st.sidebar.image(LOGO_EMPRESA, use_container_width=True)
+st.sidebar.image(LOGO_EMPRESA, use_container_width=True)
 st.sidebar.markdown(f"<div style='padding:10px; border-radius:5px'>", unsafe_allow_html=True)
 
 filtro_estado = st.sidebar.multiselect("Selecione Estado(s):", sorted(dados["Estado"].dropna().unique()))
@@ -214,5 +214,6 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
+
 
 
