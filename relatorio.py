@@ -9,36 +9,34 @@ from gspread_dataframe import get_as_dataframe
 # ========================
 def check_password():
     """Retorna True se o usuário inseriu a senha correta."""
-    
-    def password_entered():
-        """Verifica se a senha inserida pelo usuário está correta."""
-        if st.session_state["password"] == st.secrets["password"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Não manter a senha na memória
-        else:
-            st.session_state["password_correct"] = False
 
-    # CORREÇÃO: Adicionado ':' no final do if
-    if "password_correct" not in st.session_state:
-        # Primeira execução, mostrar o campo de senha.
-        st.text_input(
-            "Digite a senha para acessar:", type="password", on_change=password_entered, key="password"
-        )
-        return False
-    elif not st.session_state["password_correct"]:
-        # Senha incorreta, mostrar mensagem de erro.
-        st.text_input(
-            "Digite a senha para acessar:", type="password", on_change=password_entered, key="password"
-        )
-        st.error("😕 Senha incorreta. Tente novamente.")
-        return False
-    else:
-        # Senha correta, o app pode continuar.
+    # Verifica se a senha já foi validada e armazenada no session_state
+    if st.session_state.get("password_correct", False):
         return True
+
+    # Usa um formulário para o input da senha
+    with st.form("Credentials"):
+        st.text_input("Senha", type="password", key="password")
+        st.form_submit_button("Entrar", on_click=password_entered)
+    
+    # Exibe uma mensagem de erro se a tentativa de login falhou
+    if "password_correct" in st.session_state and not st.session_state.password_correct:
+        st.error("😕 Senha incorreta. Tente novamente.")
+    
+    # Se a senha ainda não foi validada, retorna False
+    return False
+
+def password_entered():
+    """Verifica se a senha inserida é a correta e atualiza o session_state."""
+    if st.session_state["password"] == st.secrets["password"]:
+        st.session_state["password_correct"] = True
+        del st.session_state["password"]  # Não manter a senha na memória
+    else:
+        st.session_state["password_correct"] = False
 
 # Verificação de senha. O resto do seu código só roda se a função retornar True.
 if not check_password():
-    st.stop() # Interrompe a execução do app se a senha estiver incorreta.
+    st.stop()
 
 # ========================
 # CONFIGURAÇÃO DA PÁGINA
@@ -290,6 +288,7 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
+
 
 
 
