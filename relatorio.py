@@ -200,26 +200,29 @@ with tab_geral:
 with tab_cidade:
     st.subheader("📍 Distribuição de alunos por cidade")
     
-    # Agrupa os dados como antes
     df_cidade = df_filtrado.groupby(["Chave", "Cidade", "Estado", "Latitude", "Longitude"]).size().reset_index(name="Qtd")
 
-    # --- INÍCIO DA CORREÇÃO DE SEGURANÇA DE DADOS ---
+    # --- INÍCIO DA CORREÇÃO DE SEGURANÇA DE DADOS (VERSÃO 2) ---
 
     # 1. Garante que as colunas de coordenadas são do tipo numérico.
-    #    O 'errors='coerce'' transforma qualquer valor inválido (texto, etc.) em Nulo (NaT).
+    #    Valores inválidos (texto, etc.) se tornarão Nulos (NaT).
     df_cidade['Latitude'] = pd.to_numeric(df_cidade['Latitude'], errors='coerce')
     df_cidade['Longitude'] = pd.to_numeric(df_cidade['Longitude'], errors='coerce')
 
-    # 2. Remove qualquer linha que tenha ficado com coordenadas nulas após a conversão.
+    # 2. Remove qualquer linha que tenha coordenadas nulas.
     df_cidade.dropna(subset=["Latitude", "Longitude"], inplace=True)
     
+    # 3. (NOVO E CRUCIAL) Filtra os dados para manter apenas coordenadas dentro do intervalo geográfico válido.
+    df_cidade = df_cidade[df_cidade['Latitude'].between(-90, 90)]
+    df_cidade = df_cidade[df_cidade['Longitude'].between(-180, 180)]
+
     # --- FIM DA CORREÇÃO ---
 
-    # 3. Verifica se, após a limpeza, ainda existem dados para mostrar.
+    # 4. Verifica se, após a limpeza completa, ainda existem dados para mostrar.
     if df_cidade.empty:
-        st.warning("Não há dados de cidades com coordenadas geográficas para exibir com os filtros atuais.")
+        st.warning("Não há dados de cidades com coordenadas geográficas válidas para exibir com os filtros atuais.")
     else:
-        # Se houver dados válidos, cria e exibe o mapa normalmente.
+        # Se houver dados válidos, cria e exibe o mapa.
         mapa_bolhas = px.scatter_mapbox(df_cidade, lat="Latitude", lon="Longitude", size="Qtd",
                                         hover_name="Cidade",
                                         hover_data={"Estado":True,"Qtd":True},
@@ -247,7 +250,6 @@ with tab_cidade:
                                   plot_bgcolor=COR_FUNDO,
                                   font_color=COR_TEXTO)
     st.plotly_chart(fig_top_cidades, use_container_width=True)
-
 # ========================
 # ABA ESTADOS
 # ========================
@@ -285,4 +287,5 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
+
 
