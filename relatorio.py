@@ -22,12 +22,15 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-authenticator.login()
+name, authentication_status, username = authenticator.login()
 st.write("--- DEBUG INFO ---")
 st.write(f"Authentication status: {st.session_state.get('authentication_status')}")
 st.write("--------------------")
 
-if st.session_state["authentication_status"]:
+if authentication_status:
+    st.session_state["name"] = name
+    st.session_state["authentication_status"] = authentication_status
+    st.session_state["username"] = username
     # --- O DASHBOARD SÓ É RENDERIZADO SE O LOGIN FOR BEM-SUCEDIDO ---
 
     # ========================
@@ -273,9 +276,9 @@ if st.session_state["authentication_status"]:
     # ========================
     st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins e Pietro Kettner</p>", unsafe_allow_html=True)
 
-elif st.session_state["authentication_status"] is False:
+elif authentication_status is False:
     st.error('Usuário ou senha incorreta')
-elif st.session_state["authentication_status"] is None:
+elif authentication_status is None:
     st.warning('Por favor, insira seu usuário e senha')
 
 
