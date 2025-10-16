@@ -4,7 +4,6 @@ import plotly.express as px
 import gspread
 import streamlit_authenticator as stauth
 from gspread_dataframe import get_as_dataframe
-import copy
 
 # ========================
 # CONFIGURAÇÃO DA PÁGINA
@@ -14,13 +13,22 @@ st.set_page_config(page_title="Dashboard Acadêmica", layout="wide")
 # ========================
 # LÓGICA DE AUTENTICAÇÃO
 # ========================
-credentials = copy.deepcopy(st.secrets['credentials'])
-cookie = copy.deepcopy(st.secrets['cookie'])
-
 config = {
-    'credentials': credentials,
-    'cookie': cookie
+    'credentials': {
+        'usernames': {}
+    },
+    'cookie': {
+        'name': st.secrets['cookie']['name'],
+        'key': st.secrets['cookie']['key'],
+        'expiry_days': st.secrets['cookie']['expiry_days']
+    }
 }
+for username, user_info in st.secrets['credentials']['usernames'].items():
+    config['credentials']['usernames'][username] = {
+        'email': user_info['email'],
+        'name': user_info['name'],
+        'password': user_info['password']
+    }
 
 authenticator = stauth.Authenticate(
     config['credentials'],
@@ -281,6 +289,7 @@ elif st.session_state["authentication_status"] is False:
     st.error('Usuário ou senha incorreta')
 elif st.session_state["authentication_status"] is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
