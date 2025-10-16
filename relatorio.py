@@ -8,6 +8,8 @@ from gspread_dataframe import get_as_dataframe
 # ========================
 # FUNÇÃO DE LOGIN / SENHA
 # ========================
+config = st.secrets.to_dict()
+
 authenticator = stauth.Authenticate(
     st.secrets['credentials'],
     st.secrets['cookie']['name'],
@@ -277,3 +279,4 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
+
