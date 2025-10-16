@@ -13,7 +13,10 @@ st.set_page_config(page_title="Dashboard Acadêmica", layout="wide")
 # ========================
 # LÓGICA DE AUTENTICAÇÃO
 # ========================
-config = st.secrets.to_dict()
+config = {
+    'credentials': dict(st.secrets['credentials']),
+    'cookie': dict(st.secrets['cookie'])
+}
 
 authenticator = stauth.Authenticate(
     config['credentials'],
@@ -274,6 +277,7 @@ elif st.session_state["authentication_status"] is False:
     st.error('Usuário ou senha incorreta')
 elif st.session_state["authentication_status"] is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
