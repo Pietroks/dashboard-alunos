@@ -22,10 +22,8 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-authenticator.login()
-
-# --- ESTRUTURA DE CONTROLE CORRIGIDA ---
-if st.session_state["authentication_status"]:
+name, authentication_status, username = authenticator.login('Login', 'main')
+if authentication_status: 
     # --- O DASHBOARD SÓ É RENDERIZADO SE O LOGIN FOR BEM-SUCEDIDO ---
 
     # ========================
@@ -103,22 +101,23 @@ if st.session_state["authentication_status"]:
     # ========================
     # BARRA LATERAL
     # ========================
-    LOGO_EMPRESA = "logo-unintese-simples.png"
-    st.sidebar.image(LOGO_EMPRESA, use_container_width=True)
-    
-    # Adiciona o botão de logout na barra lateral
-    authenticator.logout('Logout', 'sidebar')
-    st.sidebar.markdown("---")
+    with st.sidebar:
+        LOGO_EMPRESA = "logo-unintese-simples.png"
+        st.image(LOGO_EMPRESA, use_container_width=True)
+        
+        st.write(f'Bem-vindo(a), *{name}*')
+        authenticator.logout('Logout')
+        st.markdown("---")
 
-    st.sidebar.markdown(f"<div style='padding:10px; border-radius:5px'>", unsafe_allow_html=True)
-    filtro_estado = st.sidebar.multiselect("Selecione Estado(s):", sorted(dados["Estado"].dropna().unique()))
-    filtro_cidade = st.sidebar.multiselect("Selecione Cidade(s):", sorted(dados["Cidade"].dropna().unique()))
-    filtro_tipo = st.sidebar.multiselect("Selecione Tipo:", sorted(dados["Tipo"].dropna().unique()))
-    filtro_situacao = st.sidebar.multiselect("Situação do contrato:", sorted(dados["Situacao do contrato"].dropna().unique()))
-    filtro_curso = st.sidebar.multiselect("Curso:", sorted(dados["Curso"].dropna().unique()))
-    top_n_cidades = st.sidebar.slider("Top N Cidades:", min_value=5, max_value=20, value=10, step=1)
-    top_n_estados = st.sidebar.slider("Top N Estados:", min_value=5, max_value=20, value=10, step=1)
-    st.sidebar.markdown("</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"<div style='padding:10px; border-radius:5px'>", unsafe_allow_html=True)
+        filtro_estado = st.sidebar.multiselect("Selecione Estado(s):", sorted(dados["Estado"].dropna().unique()))
+        filtro_cidade = st.sidebar.multiselect("Selecione Cidade(s):", sorted(dados["Cidade"].dropna().unique()))
+        filtro_tipo = st.sidebar.multiselect("Selecione Tipo:", sorted(dados["Tipo"].dropna().unique()))
+        filtro_situacao = st.sidebar.multiselect("Situação do contrato:", sorted(dados["Situacao do contrato"].dropna().unique()))
+        filtro_curso = st.sidebar.multiselect("Curso:", sorted(dados["Curso"].dropna().unique()))
+        top_n_cidades = st.sidebar.slider("Top N Cidades:", min_value=5, max_value=20, value=10, step=1)
+        top_n_estados = st.sidebar.slider("Top N Estados:", min_value=5, max_value=20, value=10, step=1)
+        st.sidebar.markdown("</div>", unsafe_allow_html=True)
     
     # ========================
     # FILTRAR DADOS
@@ -270,7 +269,8 @@ if st.session_state["authentication_status"]:
     # ========================
     st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins e Pietro Kettner</p>", unsafe_allow_html=True)
 
-elif st.session_state["authentication_status"] is False:
+elif authentication_status is False:
     st.error('Usuário ou senha incorreta')
-elif st.session_state["authentication_status"] is None:
+elif authentication_status is None:
     st.warning('Por favor, insira seu usuário e senha')
+
