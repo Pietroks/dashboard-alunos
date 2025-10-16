@@ -23,6 +23,10 @@ authenticator = stauth.Authenticate(
 )
 
 authenticator.login()
+st.write("--- DEBUG INFO ---")
+st.write(f"Authentication status: {st.session_state.get('authentication_status')}")
+st.write("--------------------")
+
 if st.session_state["authentication_status"]:
     # --- O DASHBOARD SÓ É RENDERIZADO SE O LOGIN FOR BEM-SUCEDIDO ---
 
@@ -273,6 +277,7 @@ elif st.session_state["authentication_status"] is False:
     st.error('Usuário ou senha incorreta')
 elif st.session_state["authentication_status"] is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
