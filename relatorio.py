@@ -22,7 +22,7 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-name, authentication_status, username = authenticator.login('Login', 'main')
+name, authentication_status, username = authenticator.login()
 if authentication_status: 
     # --- O DASHBOARD SÓ É RENDERIZADO SE O LOGIN FOR BEM-SUCEDIDO ---
 
@@ -273,4 +273,5 @@ elif authentication_status is False:
     st.error('Usuário ou senha incorreta')
 elif authentication_status is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
