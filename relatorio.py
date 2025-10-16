@@ -269,10 +269,11 @@ if st.session_state["authentication_status"]:
     # ========================
     st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins e Pietro Kettner</p>", unsafe_allow_html=True)
 
-elif authentication_status is False:
+elif st.session_state["authentication_status"] is False:
     st.error('Usuário ou senha incorreta')
-elif authentication_status is None:
+elif st.session_state["authentication_status"] is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
