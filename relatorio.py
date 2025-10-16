@@ -2,41 +2,27 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import gspread
+import streamlit_authenticator as stauth
 from gspread_dataframe import get_as_dataframe
 
 # ========================
 # FUNÇÃO DE LOGIN / SENHA
 # ========================
-def check_password():
-    """Retorna True se o usuário inseriu a senha correta."""
+authenticator = stauth.Authenticate(
+    st.secrets['credentials'],
+    st.secrets['cookie']['name'],
+    st.secrets['cookie']['key'],
+    st.secrets['cookie']['expiry_days']
+)
+authenticator.login()
 
-    # Verifica se a senha já foi validada e armazenada no session_state
-    if st.session_state.get("password_correct", False):
-        return True
-
-    # Usa um formulário para o input da senha
-    with st.form("Credentials"):
-        st.text_input("Senha", type="password", key="password")
-        st.form_submit_button("Entrar", on_click=password_entered)
-    
-    # Exibe uma mensagem de erro se a tentativa de login falhou
-    if "password_correct" in st.session_state and not st.session_state.password_correct:
-        st.error("😕 Senha incorreta. Tente novamente.")
-    
-    # Se a senha ainda não foi validada, retorna False
-    return False
-
-def password_entered():
-    """Verifica se a senha inserida é a correta e atualiza o session_state."""
-    if st.session_state["password"] == st.secrets["password"]:
-        st.session_state["password_correct"] = True
-        del st.session_state["password"]  # Não manter a senha na memória
-    else:
-        st.session_state["password_correct"] = False
-
-# Verificação de senha. O resto do seu código só roda se a função retornar True.
-if not check_password():
+if st.session_state['authentication_status'] is False:
+    st.error('Usuario ou senha incorreta')
     st.stop()
+elif st.session_state['authentication_status'] is None:
+    st.warning('Por favor insira seu usuario e senha.')
+    st.stop()
+    
 
 # ========================
 # CONFIGURAÇÃO DA PÁGINA
@@ -52,14 +38,14 @@ COR_FUNDO = "#000000"
 COR_TEXTO = "#FFFFFF"
 
 # ========================
-# CARREGAR DADOS DO GOOGLE SHEETS (MÉTODO SEGURO)
+# CARREGAR DADOS DO GOOGLE SHEETS
 # ========================
 try:
     creds_dict = st.secrets['gcp_service_account']
     sa = gspread.service_account_from_dict(creds_dict)
-    spreadsheet = sa.open('basededados') # IMPORTANTE: 'basededados' é o NOME da sua planilha no Google Drive
-    worksheet_base = spreadsheet.worksheet('basededados') # Nome da ABA com dados dos alunos
-    worksheet_coords = spreadsheet.worksheet('coordenadas') # Nome da ABA com coordenadas
+    spreadsheet = sa.open('basededados') 
+    worksheet_base = spreadsheet.worksheet('basededados') 
+    worksheet_coords = spreadsheet.worksheet('coordenadas') 
 
     dados = get_as_dataframe(worksheet_base)
     coordenadas = get_as_dataframe(worksheet_coords)
@@ -126,6 +112,9 @@ LOGO_EMPRESA = "logo-unintese-simples.png"
 
 st.sidebar.image(LOGO_EMPRESA, use_container_width=True)
 st.sidebar.markdown(f"<div style='padding:10px; border-radius:5px'>", unsafe_allow_html=True)
+
+authenticatos.logout('Logout', 'sidebar')
+st.sidebar.markdown("---")
 
 filtro_estado = st.sidebar.multiselect("Selecione Estado(s):", sorted(dados["Estado"].dropna().unique()))
 filtro_cidade = st.sidebar.multiselect("Selecione Cidade(s):", sorted(dados["Cidade"].dropna().unique()))
@@ -288,9 +277,3 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
-
-
-
-
-
-
