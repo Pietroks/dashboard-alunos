@@ -11,18 +11,19 @@ from gspread_dataframe import get_as_dataframe
 config = st.secrets.to_dict()
 
 authenticator = stauth.Authenticate(
-    st.secrets['credentials'],
-    st.secrets['cookie']['name'],
-    st.secrets['cookie']['key'],
-    st.secrets['cookie']['expiry_days']
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days']
 )
+
 authenticator.login()
 
 if st.session_state['authentication_status'] is False:
-    st.error('Usuario ou senha incorreta')
+    st.error('Usuário ou senha incorreta')
     st.stop()
 elif st.session_state['authentication_status'] is None:
-    st.warning('Por favor insira seu usuario e senha.')
+    st.warning('Por favor insira seu usuário e senha.')
     st.stop()
     
 
@@ -279,4 +280,5 @@ with tab_estado:
 # RODAPÉ
 # ========================
 st.markdown(f"<p style='text-align:center; color:{COR_TEXTO}; font-size:12px;'>Criado e desenvolvido por Eduardo Martins</p>", unsafe_allow_html=True)
+
 
