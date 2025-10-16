@@ -105,7 +105,7 @@ if st.session_state["authentication_status"]:
         LOGO_EMPRESA = "logo-unintese-simples.png"
         st.image(LOGO_EMPRESA, use_container_width=True)
         
-        st.write(f'Bem-vindo(a), *{name}*')
+        st.write(f'Bem-vindo(a), *{st.session_state["name"]}*')
         authenticator.logout('Logout')
         st.markdown("---")
 
@@ -273,6 +273,7 @@ elif st.session_state["authentication_status"] is False:
     st.error('Usuário ou senha incorreta')
 elif st.session_state["authentication_status"] is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
