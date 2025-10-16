@@ -22,10 +22,18 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-name, authentication_status, username = authenticator.login('main')
+login_result = authenticator.login('main')
 st.write("--- DEBUG INFO ---")
-st.write(f"Authentication status: {st.session_state.get('authentication_status')}")
+st.write(f"Resultado da função login: {login_result}")
+st.write(f"Tipo do resultado: {type(login_result)}")
 st.write("--------------------")
+
+name = None
+authentication_status = None
+username = None
+
+if isinstance(login_result, tuple) and len(login_result) == 3:
+    name, authentication_status, username = login_result
 
 if authentication_status:
     st.session_state["name"] = name
@@ -280,6 +288,7 @@ elif authentication_status is False:
     st.error('Usuário ou senha incorreta')
 elif authentication_status is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
