@@ -22,7 +22,7 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-name, authentication_status, username = authenticator.login()
+name, authentication_status, username = authenticator.login('main')
 st.write("--- DEBUG INFO ---")
 st.write(f"Authentication status: {st.session_state.get('authentication_status')}")
 st.write("--------------------")
@@ -280,6 +280,7 @@ elif authentication_status is False:
     st.error('Usuário ou senha incorreta')
 elif authentication_status is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
