@@ -106,7 +106,7 @@ if st.session_state["authentication_status"]:
             visibility: hidden;
         }}
         ._profileContainer_gzau3_53 {{
-            visibility: hidden;
+            visibility: hidden !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -292,6 +292,7 @@ elif st.session_state["authentication_status"] is False:
     st.error('Usuário ou senha incorreta')
 elif st.session_state["authentication_status"] is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
