@@ -105,6 +105,9 @@ if st.session_state["authentication_status"]:
         header {{
             visibility: hidden;
         }}
+        footer {{
+            visibility: hidden;
+        }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -289,6 +292,7 @@ elif st.session_state["authentication_status"] is False:
     st.error('Usuário ou senha incorreta')
 elif st.session_state["authentication_status"] is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
