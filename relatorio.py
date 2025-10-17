@@ -8,7 +8,7 @@ from gspread_dataframe import get_as_dataframe
 # ========================
 # CONFIGURAÇÃO DA PÁGINA
 # ========================
-st.set_page_config(page_title="Dashboard Acadêmica", layout="wide")
+st.set_page_config(page_title="Dashboard Acadêmica", page_icon="logo-unintese-simples.png", layout="wide")
 
 # ========================
 # LÓGICA DE AUTENTICAÇÃO
@@ -295,6 +295,7 @@ elif st.session_state["authentication_status"] is False:
     st.error('Usuário ou senha incorreta')
 elif st.session_state["authentication_status"] is None:
     st.warning('Por favor, insira seu usuário e senha')
+
 
 
 
