@@ -64,6 +64,17 @@ def injetar_css_dark():
             color: #F1F5F9 !important;
         }
         
+        /* Oculta o menu superior direito, botões de Fork/GitHub e cabeçalho padrão */
+        #MainMenu {visibility: hidden;}
+        header {visibility: hidden;}
+        [data-testid="stHeader"] {display: none;}
+        [data-testid="stToolbar"] {display: none;}
+
+        /* Oculta a barra de status e o rodapé 'Made with Streamlit' / 'Manage app' */
+        footer {visibility: hidden;}
+        [data-testid="stStatusWidget"] {display: none;}
+        .stAppDeployButton {display: none;}
+        
         /* Cards de Métricas Dark */
         .metric-card-dark {
             background: #1E293B;
