@@ -11,7 +11,7 @@ from services.auth import inicializar_banco, verificar_credenciais
 from services.google_sheets import carregar_planilha
 from utils.tratamento import classificar_status
 
-# 1. CONFIGURAÇÕES INICIAIS E ESTILIZAÇÃO GLOBAL
+# 1. CONFIGURAÇÕES INICIAIS E ESTILIZAÇÃO DARK MODE
 st.set_page_config(
     page_title="Dashboard Acadêmico | Uníntese",
     page_icon="🎓",
@@ -22,25 +22,25 @@ st.set_page_config(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Paleta de Cores e Identidade Visual
+# Paleta de Cores e Identidade Visual (Dark Mode)
 CORES_STATUS = {
     "ATIVO": "#10B981",       # Emerald Green
     "TRANCADO": "#F59E0B",     # Amber Orange
     "INATIVO": "#EF4444",      # Rose Red
-    "DESISTENTE": "#64748B"    # Slate Gray
+    "DESISTENTE": "#94A3B8"    # Slate Gray
 }
 
-CORES_PALETTE = ["#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EC4899", "#06B6D4", "#64748B"]
+CORES_PALETTE = ["#38BDF8", "#34D399", "#A78BFA", "#FBBF24", "#F472B6", "#22D3EE", "#94A3B8"]
 
 METRICAS_CONFIG = [
-    {"key": "total", "label": "Total de Alunos", "icon": "👥", "color": "#2563EB", "bg": "rgba(37, 99, 235, 0.08)"},
-    {"key": "ATIVO", "label": "Alunos Ativos", "icon": "✅", "color": CORES_STATUS["ATIVO"], "bg": "rgba(16, 185, 129, 0.08)"},
-    {"key": "TRANCADO", "label": "Trancados", "icon": "⏸️", "color": CORES_STATUS["TRANCADO"], "bg": "rgba(245, 158, 11, 0.08)"},
-    {"key": "INATIVO", "label": "Inativos", "icon": "❌", "color": CORES_STATUS["INATIVO"], "bg": "rgba(239, 68, 68, 0.08)"},
-    {"key": "DESISTENTE", "label": "Desistentes", "icon": "🚫", "color": CORES_STATUS["DESISTENTE"], "bg": "rgba(100, 116, 139, 0.08)"},
+    {"key": "total", "label": "Total de Alunos", "icon": "👥", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.12)"},
+    {"key": "ATIVO", "label": "Alunos Ativos", "icon": "✅", "color": CORES_STATUS["ATIVO"], "bg": "rgba(16, 185, 129, 0.12)"},
+    {"key": "TRANCADO", "label": "Trancados", "icon": "⏸️", "color": CORES_STATUS["TRANCADO"], "bg": "rgba(245, 158, 11, 0.12)"},
+    {"key": "INATIVO", "label": "Inativos", "icon": "❌", "color": CORES_STATUS["INATIVO"], "bg": "rgba(239, 68, 68, 0.12)"},
+    {"key": "DESISTENTE", "label": "Desistentes", "icon": "🚫", "color": CORES_STATUS["DESISTENTE"], "bg": "rgba(148, 163, 184, 0.12)"},
 ]
 
-def injetar_css():
+def injetar_css_dark():
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -49,57 +49,63 @@ def injetar_css():
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
-        /* Fundo limpo e suave */
+        /* Fundo Geral Dark */
         .stApp {
-            background-color: #F8FAFC;
+            background-color: #0F172A;
+            color: #F8FAFC;
         }
         
-        /* Ajuste do Sidebar */
+        /* Sidebar Dark */
         [data-testid="stSidebar"] {
-            background-color: #FFFFFF;
-            border-right: 1px solid #E2E8F0;
+            background-color: #1E293B;
+            border-right: 1px solid #334155;
+        }
+        [data-testid="stSidebar"] * {
+            color: #F1F5F9 !important;
         }
         
-        /* Cards de Métricas */
-        .metric-card {
-            background: #FFFFFF;
+        /* Cards de Métricas Dark */
+        .metric-card-dark {
+            background: #1E293B;
             padding: 20px;
             border-radius: 14px;
-            border: 1px solid #E2E8F0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+            border: 1px solid #334155;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
             transition: all 0.2s ease-in-out;
             height: 100%;
         }
-        .metric-card:hover {
+        .metric-card-dark:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+            border-color: #475569;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
         }
         
-        /* Seção Título e Subtítulos */
-        .section-header {
+        /* Títulos e Cabeçalhos */
+        .section-header-dark {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-top: 24px;
+            margin-top: 28px;
             margin-bottom: 16px;
             font-size: 20px;
             font-weight: 700;
-            color: #0F172A;
+            color: #F8FAFC;
         }
         
-        /* Badges */
-        .custom-badge {
-            background: #EEF2F6;
-            color: #475569;
-            padding: 4px 12px;
+        /* Badges Dark */
+        .custom-badge-dark {
+            background: #334155;
+            color: #38BDF8;
+            padding: 6px 14px;
             border-radius: 9999px;
             font-size: 13px;
             font-weight: 600;
+            border: 1px solid #475569;
             display: inline-flex;
             align-items: center;
         }
         
-        /* Botões customizados */
+        /* Botões Dark */
         div.stButton > button {
             border-radius: 8px;
             font-weight: 500;
@@ -117,22 +123,22 @@ def renderizar_login() -> bool:
         st.session_state["usuario_nome"] = ""
 
     if not st.session_state["autenticado"]:
-        injetar_css()
+        injetar_css_dark()
         col1, col2, col3 = st.columns([1, 1.2, 1])
         with col2:
             st.markdown("<br><br>", unsafe_allow_html=True)
             st.markdown("""
-            <div style="background: white; padding: 32px; border-radius: 16px; border: 1px solid #E2E8F0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); text-align: center;">
+            <div style="background: #1E293B; padding: 32px; border-radius: 16px; border: 1px solid #334155; box-shadow: 0 8px 30px rgba(0,0,0,0.4); text-align: center;">
                 <span style="font-size: 42px;">🎓</span>
-                <h2 style="font-weight: 700; color: #0F172A; margin: 12px 0 4px 0;">Dashboard Acadêmico</h2>
-                <p style="color: #64748B; font-size: 14px; margin-bottom: 24px;">Insira suas credenciais institucionais</p>
+                <h2 style="font-weight: 700; color: #F8FAFC; margin: 12px 0 4px 0;">Dashboard Acadêmico</h2>
+                <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">Painel Institucional • Acesso Restrito</p>
             </div>
             """, unsafe_allow_html=True)
             
             with st.form("form_login"):
                 usuario = st.text_input("Usuário", placeholder="ex: admin")
                 senha = st.text_input("Senha", type="password", placeholder="••••••••")
-                btn_entrar = st.form_submit_button("Acessar Painel", width="stretch", type="primary")
+                btn_entrar = st.form_submit_button("Entrar no Painel", width="stretch", type="primary")
                 
                 if btn_entrar:
                     nome = verificar_credenciais(usuario, senha)
@@ -208,16 +214,17 @@ def aplicar_filtros(df: pd.DataFrame, filtros: Dict[str, list]) -> pd.DataFrame:
             df = df[df[coluna].isin(valores)]
     return df
 
-def aplicar_layout_padrao(fig, height: int, show_legend: bool):
+def aplicar_layout_dark(fig, height: int, show_legend: bool):
     fig.update_layout(
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter, sans-serif", size=12, color="#475569"),
+        font=dict(family="Inter, sans-serif", size=12, color="#94A3B8"),
         margin=dict(l=20, r=20, t=40, b=20),
         showlegend=show_legend,
         height=height,
-        xaxis=dict(gridcolor="#F1F5F9", showline=False),
-        yaxis=dict(gridcolor="#F1F5F9", showline=False)
+        xaxis=dict(gridcolor="#334155", showline=False, color="#94A3B8"),
+        yaxis=dict(gridcolor="#334155", showline=False, color="#94A3B8"),
+        legend=dict(font=dict(color="#F1F5F9"))
     )
     return fig
 
@@ -236,9 +243,10 @@ def criar_grafico_barras(df: pd.DataFrame, x: str, title: str, orientation: str 
     )
     fig.update_traces(
         textposition="outside",
-        marker=dict(line=dict(width=0), opacity=0.9)
+        marker=dict(line=dict(width=0), opacity=0.9),
+        textfont=dict(color="#F1F5F9")
     )
-    return aplicar_layout_padrao(fig, height=380 if orientation == "v" else 420, show_legend=False)
+    return aplicar_layout_dark(fig, height=380 if orientation == "v" else 420, show_legend=False)
 
 def criar_grafico_pizza(df: pd.DataFrame, names: str, title: str, height: int = 380) -> px.pie:
     data = df[names].value_counts().reset_index()
@@ -257,7 +265,7 @@ def criar_grafico_pizza(df: pd.DataFrame, names: str, title: str, height: int = 
         textinfo="percent+label",
         hovertemplate="<b>%{label}</b><br>Qtd: %{value}"
     )
-    return aplicar_layout_padrao(fig, height=height, show_legend=True)
+    return aplicar_layout_dark(fig, height=height, show_legend=True)
 
 def gerar_excel(df: pd.DataFrame) -> bytes:
     output = BytesIO()
@@ -280,13 +288,13 @@ def renderizar_sidebar(df: pd.DataFrame):
 
     with st.sidebar:
         st.markdown(f"""
-        <div style="padding: 12px 0 16px 0; border-bottom: 1px solid #E2E8F0; margin-bottom: 16px;">
-            <div style="font-size: 11px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em;">Usuário Conectado</div>
-            <div style="font-size: 16px; font-weight: 700; color: #0F172A; margin-top: 2px;">👤 {st.session_state.get('usuario_nome', 'Admin')}</div>
+        <div style="padding: 12px 0 16px 0; border-bottom: 1px solid #334155; margin-bottom: 16px;">
+            <div style="font-size: 11px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em;">Sessão Ativa</div>
+            <div style="font-size: 16px; font-weight: 700; color: #F8FAFC; margin-top: 2px;">👤 {st.session_state.get('usuario_nome', 'Admin')}</div>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("🚪 Encerrar Sessão", width="stretch"):
+        if st.button("🚪 Sair do Sistema", width="stretch"):
             st.session_state["autenticado"] = False
             st.session_state["usuario_nome"] = ""
             st.rerun()
@@ -316,9 +324,9 @@ def renderizar_sidebar(df: pd.DataFrame):
                 filtros[coluna] = st.multiselect(label, opcoes, placeholder="Todos", key=f"f_{coluna}")
         
         st.markdown("---")
-        st.button("🔄 Redefinir Filtros", on_click=resetar_filtros, width="stretch")
+        st.button("🔄 Limpar Filtros", on_click=resetar_filtros, width="stretch")
             
-        if st.button("⚡ Atualizar Base", width="stretch", type="secondary"):
+        if st.button("⚡ Atualizar Dados", width="stretch", type="secondary"):
             st.cache_data.clear()
             st.rerun()
             
@@ -331,7 +339,7 @@ def renderizar_filtros_ativos(filtros: Dict[str, list], busca: str):
         
     if filtros_selecionados:
         st.markdown(f"""
-        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; padding: 10px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 20px;">
+        <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38BDF8; padding: 10px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 20px;">
             📌 <b>Filtros Ativos:</b> {' &nbsp;|&nbsp; '.join(filtros_selecionados)}
         </div>
         """, unsafe_allow_html=True)
@@ -354,12 +362,12 @@ def renderizar_metricas(df: pd.DataFrame):
             cor = config["color"]
             bg = config["bg"]
             st.markdown(f"""
-            <div class="metric-card" style="border-top: 3px solid {cor};">
+            <div class="metric-card-dark" style="border-top: 3px solid {cor};">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 13px; font-weight: 600; color: #64748B;">{config['label']}</span>
+                    <span style="font-size: 13px; font-weight: 600; color: #94A3B8;">{config['label']}</span>
                     <span style="background: {bg}; color: {cor}; padding: 4px 8px; border-radius: 8px; font-size: 14px;">{config['icon']}</span>
                 </div>
-                <div style="font-size: 28px; font-weight: 700; color: #0F172A; margin-top: 10px;">
+                <div style="font-size: 28px; font-weight: 700; color: #F8FAFC; margin-top: 10px;">
                     {metricas[config['key']]:,}
                 </div>
             </div>
@@ -384,10 +392,10 @@ def renderizar_indicadores_academicos(df: pd.DataFrame):
             qtd = indicadores[status]
             pct = percentuais[status]
             st.markdown(f"""
-            <div class="metric-card" style="border-left: 4px solid {cor};">
-                <div style="font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase;">{status}</div>
+            <div class="metric-card-dark" style="border-left: 4px solid {cor};">
+                <div style="font-size: 12px; font-weight: 600; color: #94A3B8; text-transform: uppercase;">{status}</div>
                 <div style="font-size: 24px; font-weight: 700; color: {cor}; margin-top: 4px;">{pct:.1f}%</div>
-                <div style="font-size: 13px; color: #94A3B8; margin-top: 2px;">{qtd:,} estudantes</div>
+                <div style="font-size: 13px; color: #64748B; margin-top: 2px;">{qtd:,} estudantes</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -420,18 +428,18 @@ def renderizar_analise_situacao(df: pd.DataFrame):
             title="<b>Distribuição por Situação de Contrato</b>",
             color="Situação", color_discrete_sequence=CORES_PALETTE
         )
-        fig.update_traces(textposition="outside", marker=dict(opacity=0.9))
-        fig = aplicar_layout_padrao(fig, height=360, show_legend=False)
+        fig.update_traces(textposition="outside", marker=dict(opacity=0.9), textfont=dict(color="#F1F5F9"))
+        fig = aplicar_layout_dark(fig, height=360, show_legend=False)
         st.plotly_chart(fig, width="stretch")
 
     with col2:
         tabela_resumo = resumo.copy()
         tabela_resumo["Percentual"] = tabela_resumo["Percentual"].map(lambda x: f"{x:.1f}%")
-        st.markdown("<div style='font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;'>Tabela de Frequência</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 14px; font-weight: 600; color: #94A3B8; margin-bottom: 8px;'>Tabela de Frequência</div>", unsafe_allow_html=True)
         st.dataframe(tabela_resumo, width="stretch", hide_index=True, height=330)
 
     if col_aluno and col_aluno in df_situacao.columns:
-        st.markdown("<br><div style='font-size: 16px; font-weight: 600; color: #1E293B;'>🔄 Matriz Cruzada: Situação do Contrato × Situação do Aluno</div>", unsafe_allow_html=True)
+        st.markdown("<br><div style='font-size: 16px; font-weight: 600; color: #F1F5F9;'>🔄 Matriz Cruzada: Situação do Contrato × Situação do Aluno</div>", unsafe_allow_html=True)
         cruzamento_absoluto = pd.crosstab(df_situacao[col_contrato], df_situacao[col_aluno])
         cruzamento_percentual = pd.crosstab(df_situacao[col_contrato], df_situacao[col_aluno], normalize="index") * 100
         
@@ -471,13 +479,13 @@ def criar_mapa_estados(df: pd.DataFrame):
         labels={"Alunos": "Alunos", "Estado": "UF"},
         title="<b>Densidade Geográfica de Discentes</b>",
     )
-    fig.update_geos(fitbounds="locations", visible=False)
+    fig.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
     fig.update_layout(
         height=480,
         margin=dict(l=0, r=0, t=40, b=0),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter, sans-serif")
+        font=dict(family="Inter, sans-serif", color="#94A3B8")
     )
     return fig
 
@@ -486,7 +494,7 @@ def main():
     if not renderizar_login():
         return
         
-    injetar_css()
+    injetar_css_dark()
     
     with st.spinner("🔄 Carregando dados da planilha institucional..."):
         df = carregar_dados()
@@ -509,14 +517,14 @@ def main():
         cond_matr = df_filtrado[col_matr].astype(str).str.contains(busca, case=False, na=False) if col_matr else False
         df_filtrado = df_filtrado[cond_nome | cond_matr]
     
-    # Cabeçalho Principal Moderno
+    # Cabeçalho Principal Dark Mode
     st.markdown(f"""
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
-            <h1 style="font-size: 26px; font-weight: 800; color: #0F172A; margin: 0;">🎓 Dashboard de Gestão Acadêmica</h1>
-            <p style="font-size: 14px; color: #64748B; margin: 4px 0 0 0;">Monitoramento de discentes, retenção e perfil institucional</p>
+            <h1 style="font-size: 26px; font-weight: 800; color: #F8FAFC; margin: 0;">🎓 Dashboard de Gestão Acadêmica</h1>
+            <p style="font-size: 14px; color: #94A3B8; margin: 4px 0 0 0;">Monitoramento de discentes, retenção e perfil institucional</p>
         </div>
-        <span class="custom-badge">📊 {len(df_filtrado):,} discentes filtrados</span>
+        <span class="custom-badge-dark">📊 {len(df_filtrado):,} discentes filtrados</span>
     </div>
     """, unsafe_allow_html=True)
     
@@ -529,15 +537,15 @@ def main():
     renderizar_metricas(df_filtrado)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("<div class='section-header'>📈 Indicadores Acadêmicos de Retenção</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header-dark'>📈 Indicadores Acadêmicos de Retenção</div>", unsafe_allow_html=True)
     renderizar_indicadores_academicos(df_filtrado)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("<div class='section-header'>🔎 Análise Detalhada de Situação Contratual</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header-dark'>🔎 Análise Detalhada de Situação Contratual</div>", unsafe_allow_html=True)
     renderizar_analise_situacao(df_filtrado)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("<div class='section-header'>📚 Análise de Cursos, Turmas e Ingresso</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header-dark'>📚 Análise de Cursos, Turmas e Ingresso</div>", unsafe_allow_html=True)
     ca1, ca2, ca3 = st.columns(3)
     if "Curso" in df_filtrado.columns:
         ca1.plotly_chart(criar_grafico_barras(df_filtrado, "Curso", "Alunos por Curso", "h"), width="stretch")
@@ -548,7 +556,7 @@ def main():
         ca3.plotly_chart(criar_grafico_pizza(df_filtrado, col_ingresso, "Forma de Ingresso"), width="stretch")
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("<div class='section-header'>👤 Perfil Demográfico e Acessibilidade</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header-dark'>👤 Perfil Demográfico e Acessibilidade</div>", unsafe_allow_html=True)
     cd1, cd2 = st.columns(2)
     if "FaixaEtaria" in df_filtrado.columns:
         cd1.plotly_chart(criar_grafico_barras(df_filtrado, "FaixaEtaria", "Distribuição por Faixa Etária"), width="stretch")
@@ -572,7 +580,7 @@ def main():
         cp4.plotly_chart(criar_grafico_barras(df_filtrado, col_prof, "Top Profissões Declaradas", "h", top_n=10), width="stretch")
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("<div class='section-header'>🗺️ Distribuição Geográfica Nacional</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header-dark'>🗺️ Distribuição Geográfica Nacional</div>", unsafe_allow_html=True)
     if "Estado" in df_filtrado.columns and not df_filtrado["Estado"].replace("Não informado", None).dropna().empty:
         fig_mapa = criar_mapa_estados(df_filtrado)
         st.plotly_chart(fig_mapa, width="stretch")
@@ -580,7 +588,7 @@ def main():
         st.info("Nenhum dado geográfico disponível para exibir o mapa.")
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("<div class='section-header'>📋 Registros Detalhados & Exportação</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header-dark'>📋 Registros Detalhados & Exportação</div>", unsafe_allow_html=True)
     btn_col1, btn_col2 = st.columns(2)
     
     with btn_col1:
