@@ -85,7 +85,10 @@ def injetar_css_dark():
             opacity: 0 !important;
             pointer-events: none !important;
         }
-        
+        div[data-baseweb="input"] input {
+            color: #F8FAFC !important;
+            background-color: #0F172A !important;
+        }
         /* Cards de Métricas Dark */
         .metric-card-dark {
             background: #1E293B;
