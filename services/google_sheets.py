@@ -18,9 +18,13 @@ def carregar_planilha():
             caminho_local,
             scopes=scope
         )
-    # 2. Se estiver no Streamlit Cloud, converte st.secrets para dict puro
+    # 2. Se estiver no Streamlit Cloud
     elif "gcp_service_account" in st.secrets:
         info = dict(st.secrets["gcp_service_account"])
+        # Garante que os \n na chave privada sejam quebras de linha reais
+        if "private_key" in info and isinstance(info["private_key"], str):
+            info["private_key"] = info["private_key"].replace("\\n", "\n")
+            
         creds = Credentials.from_service_account_info(
             info,
             scopes=scope
@@ -30,10 +34,18 @@ def carregar_planilha():
     
     client = gspread.authorize(creds)
     
-    # ID limpo da sua planilha (sem parâmetros extras de URL)
+    # ID da sua planilha
     SPREADSHEET_ID = "1JzrYUvMCCAbzX0jGwgO16p1tKeOYK5yNXiPj8zPRwKs"
     sheet = client.open_by_key(SPREADSHEET_ID)
-    worksheet = sheet.sheet1
+    worksheet = sheet.get_worksheet(0)  # Primeira aba
     
-    data = worksheet.get_all_records()
-    return pd.DataFrame(data)
+    # Lê todos os valores de forma segura
+    valores = worksheet.get_all_values()
+    if not valores or len(valores) < 2:
+        return pd.DataFrame()
+        
+    cabecalho = valores[0]
+    linhas = valores[1:]
+    
+    df = pd.DataFrame(linhas, columns=cabecalho)
+    return df

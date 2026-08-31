@@ -98,7 +98,8 @@ def calcular_faixa_etaria(df: pd.DataFrame) -> pd.DataFrame:
 
 @st.cache_data(ttl=300)
 def carregar_dados() -> pd.DataFrame:
-    tentativas = 3
+    tentativas = 2
+    ultimo_erro = ""
     for i in range(tentativas):
         try:
             df = carregar_planilha()
@@ -115,12 +116,13 @@ def carregar_dados() -> pd.DataFrame:
             logger.info(f"Dados carregados com sucesso: {len(df)} registros.")
             return df
         except Exception as e:
+            ultimo_erro = str(e)
             logger.warning(f"Tentativa {i+1} falhou: {e}")
             if i < tentativas - 1:
-                time.sleep(2)
+                time.sleep(1)
             else:
                 logger.error(f"Erro persistente ao carregar dados: {e}")
-                st.error("❌ Falha temporária ao conectar com a planilha do Google Sheets. Clique no botão de atualização abaixo para tentar novamente.")
+                st.error(f"❌ Erro de conexão com a planilha: {ultimo_erro}")
                 return pd.DataFrame()
 
 def aplicar_filtros(df: pd.DataFrame, filtros: Dict[str, list]) -> pd.DataFrame:
