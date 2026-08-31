@@ -1,5 +1,4 @@
 import os
-import json
 import streamlit as st
 import gspread
 import pandas as pd
@@ -13,21 +12,20 @@ def carregar_planilha():
     
     caminho_local = "dashboard-alunos-494616-c0f5bcecc791.json"
     
-    # 1. Se estiver rodando localmente
+    # 1. Se estiver rodando localmente com arquivo físico
     if os.path.exists(caminho_local):
         creds = Credentials.from_service_account_file(
             caminho_local,
             scopes=scope
         )
-    # 2. Se estiver no Streamlit Cloud via string JSON bruta
-    elif "gcp_json" in st.secrets:
-        info = json.loads(st.secrets["gcp_json"])
+    # 2. Se estiver no Streamlit Cloud
+    elif "gcp_service_account" in st.secrets:
         creds = Credentials.from_service_account_info(
-            info,
+            st.secrets["gcp_service_account"],
             scopes=scope
         )
     else:
-        raise ValueError("Credenciais 'gcp_json' não encontradas nos Secrets do Streamlit.")
+        raise ValueError("Credenciais 'gcp_service_account' não encontradas nos Secrets.")
     
     client = gspread.authorize(creds)
     
