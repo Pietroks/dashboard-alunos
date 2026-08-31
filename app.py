@@ -11,24 +11,104 @@ from services.auth import inicializar_banco, verificar_credenciais
 from services.google_sheets import carregar_planilha
 from utils.tratamento import classificar_status
 
-# 1. CONFIGURAÇÕES INICIAIS E CONSTANTES
-st.set_page_config(page_title="Dashboard Acadêmico", page_icon="🎓", layout="wide", initial_sidebar_state="expanded")
+# 1. CONFIGURAÇÕES INICIAIS E ESTILIZAÇÃO GLOBAL
+st.set_page_config(
+    page_title="Dashboard Acadêmico | Uníntese",
+    page_icon="🎓",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-CORES_STATUS = {"ATIVO": "#22C55E", "TRANCADO": "#F59E0B", "INATIVO": "#EF4444", "DESISTENTE": "#6B7280"}
-CORES_PALETTE = px.colors.qualitative.Safe
+# Paleta de Cores e Identidade Visual
+CORES_STATUS = {
+    "ATIVO": "#10B981",       # Emerald Green
+    "TRANCADO": "#F59E0B",     # Amber Orange
+    "INATIVO": "#EF4444",      # Rose Red
+    "DESISTENTE": "#64748B"    # Slate Gray
+}
+
+CORES_PALETTE = ["#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EC4899", "#06B6D4", "#64748B"]
 
 METRICAS_CONFIG = [
-    {"key": "total", "label": "Total de Alunos", "icon": "👥", "color": "#000000"},
-    {"key": "ATIVO", "label": "Ativos", "icon": "✅", "color": CORES_STATUS["ATIVO"]},
-    {"key": "TRANCADO", "label": "Trancados", "icon": "⏸️", "color": CORES_STATUS["TRANCADO"]},
-    {"key": "INATIVO", "label": "Inativos", "icon": "❌", "color": CORES_STATUS["INATIVO"]},
-    {"key": "DESISTENTE", "label": "Desistentes", "icon": "🚫", "color": CORES_STATUS["DESISTENTE"]},
+    {"key": "total", "label": "Total de Alunos", "icon": "👥", "color": "#2563EB", "bg": "rgba(37, 99, 235, 0.08)"},
+    {"key": "ATIVO", "label": "Alunos Ativos", "icon": "✅", "color": CORES_STATUS["ATIVO"], "bg": "rgba(16, 185, 129, 0.08)"},
+    {"key": "TRANCADO", "label": "Trancados", "icon": "⏸️", "color": CORES_STATUS["TRANCADO"], "bg": "rgba(245, 158, 11, 0.08)"},
+    {"key": "INATIVO", "label": "Inativos", "icon": "❌", "color": CORES_STATUS["INATIVO"], "bg": "rgba(239, 68, 68, 0.08)"},
+    {"key": "DESISTENTE", "label": "Desistentes", "icon": "🚫", "color": CORES_STATUS["DESISTENTE"], "bg": "rgba(100, 116, 139, 0.08)"},
 ]
 
-# 2. FUNÇÕES AUXILIARES, TRATAMENTO E CACHE
+def injetar_css():
+    st.markdown("""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        /* Fundo limpo e suave */
+        .stApp {
+            background-color: #F8FAFC;
+        }
+        
+        /* Ajuste do Sidebar */
+        [data-testid="stSidebar"] {
+            background-color: #FFFFFF;
+            border-right: 1px solid #E2E8F0;
+        }
+        
+        /* Cards de Métricas */
+        .metric-card {
+            background: #FFFFFF;
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s ease-in-out;
+            height: 100%;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Seção Título e Subtítulos */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #0F172A;
+        }
+        
+        /* Badges */
+        .custom-badge {
+            background: #EEF2F6;
+            color: #475569;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        /* Botões customizados */
+        div.stButton > button {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# 2. FUNÇÕES AUXILIARES E CARREGAMENTO DE DADOS
 def renderizar_login() -> bool:
     inicializar_banco()
     
@@ -37,15 +117,22 @@ def renderizar_login() -> bool:
         st.session_state["usuario_nome"] = ""
 
     if not st.session_state["autenticado"]:
+        injetar_css()
         col1, col2, col3 = st.columns([1, 1.2, 1])
         with col2:
             st.markdown("<br><br>", unsafe_allow_html=True)
-            st.markdown("### 🎓 Acesso ao Dashboard Acadêmico")
+            st.markdown("""
+            <div style="background: white; padding: 32px; border-radius: 16px; border: 1px solid #E2E8F0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); text-align: center;">
+                <span style="font-size: 42px;">🎓</span>
+                <h2 style="font-weight: 700; color: #0F172A; margin: 12px 0 4px 0;">Dashboard Acadêmico</h2>
+                <p style="color: #64748B; font-size: 14px; margin-bottom: 24px;">Insira suas credenciais institucionais</p>
+            </div>
+            """, unsafe_allow_html=True)
             
             with st.form("form_login"):
-                usuario = st.text_input("Usuário")
-                senha = st.text_input("Senha", type="password")
-                btn_entrar = st.form_submit_button("Entrar", width="stretch")
+                usuario = st.text_input("Usuário", placeholder="ex: admin")
+                senha = st.text_input("Senha", type="password", placeholder="••••••••")
+                btn_entrar = st.form_submit_button("Acessar Painel", width="stretch", type="primary")
                 
                 if btn_entrar:
                     nome = verificar_credenciais(usuario, senha)
@@ -70,22 +157,15 @@ def calcular_faixa_etaria(df: pd.DataFrame) -> pd.DataFrame:
         df["FaixaEtaria"] = "Não informado"
         return df
 
-    # 1. Filtra apenas números válidos de série do Excel (entre 1 e 50.000 para evitar anos além de 2030)
     serie_num = pd.to_numeric(df[col_nasc], errors="coerce")
     serie_valida = serie_num.where((serie_num >= 1) & (serie_num <= 50000))
     datas_num = pd.to_datetime(serie_valida, unit="D", origin="1899-12-30", errors="coerce")
     
-    # 2. Converte textos de data (ex: "20/12/2002") com formato flexível
     datas_str = pd.to_datetime(df[col_nasc].astype(str).replace("Não informado", None), errors="coerce", dayfirst=True)
-    
-    # 3. Une as duas conversões
     nascimento_dt = datas_num.combine_first(datas_str)
     
-    # 4. Formata a coluna original de DataNascimento para texto legível (DD/MM/AAAA)
-    # Isso elimina os números brutos (ex: 37610) e resolve o erro do PyArrow na tabela
     df[col_nasc] = nascimento_dt.dt.strftime("%d/%m/%Y").fillna("Não informado")
 
-    # 5. Calcula as idades e classifica em faixas etárias
     hoje = pd.Timestamp.now()
     idades = (hoje - nascimento_dt).dt.days // 365.25
 
@@ -103,13 +183,10 @@ def carregar_dados() -> pd.DataFrame:
     for i in range(tentativas):
         try:
             df = carregar_planilha()
-            
-            # Padroniza tipos para evitar erros de tipagem mista no PyArrow
             df = df.astype(str)
             df = df.replace(["", "nan", "None", "null", "NaN", "NAT"], "Não informado")
             df = df.replace(r"^\s*$", "Não informado", regex=True)
             
-            # Tratamentos e classificações
             df["StatusDashboard"] = df.apply(classificar_status, axis=1)
             df = calcular_faixa_etaria(df)
             
@@ -133,9 +210,14 @@ def aplicar_filtros(df: pd.DataFrame, filtros: Dict[str, list]) -> pd.DataFrame:
 
 def aplicar_layout_padrao(fig, height: int, show_legend: bool):
     fig.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Arial, sans-serif", size=12),
-        margin=dict(l=20, r=20, t=40, b=20), showlegend=show_legend, height=height
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter, sans-serif", size=12, color="#475569"),
+        margin=dict(l=20, r=20, t=40, b=20),
+        showlegend=show_legend,
+        height=height,
+        xaxis=dict(gridcolor="#F1F5F9", showline=False),
+        yaxis=dict(gridcolor="#F1F5F9", showline=False)
     )
     return fig
 
@@ -147,18 +229,35 @@ def criar_grafico_barras(df: pd.DataFrame, x: str, title: str, orientation: str 
         data, 
         x="Quantidade" if orientation == "h" else x, 
         y=x if orientation == "h" else "Quantidade",
-        orientation=orientation, title=title, color_discrete_sequence=CORES_PALETTE, text_auto=True
+        orientation=orientation,
+        title=f"<b>{title}</b>",
+        color_discrete_sequence=CORES_PALETTE,
+        text_auto=True
     )
-    fig.update_traces(textposition="outside", marker=dict(line=dict(width=0.5, color="white")))
-    return aplicar_layout_padrao(fig, height=400 if orientation == "v" else 450, show_legend=False)
+    fig.update_traces(
+        textposition="outside",
+        marker=dict(line=dict(width=0), opacity=0.9)
+    )
+    return aplicar_layout_padrao(fig, height=380 if orientation == "v" else 420, show_legend=False)
 
-def criar_grafico_pizza(df: pd.DataFrame, names: str, title: str, height: int = 400) -> px.pie:
+def criar_grafico_pizza(df: pd.DataFrame, names: str, title: str, height: int = 380) -> px.pie:
     data = df[names].value_counts().reset_index()
     data.columns = [names, "Quantidade"]
     
-    fig = px.pie(data, names=names, values="Quantidade", title=title, color_discrete_sequence=CORES_PALETTE, hole=0.3)
-    fig.update_traces(textposition="inside", textinfo="percent+label", hovertemplate="<b>%{label}</b><br>Qtd: %{value}")
-    return aplicar_layout_padrao(fig, height, show_legend=True)
+    fig = px.pie(
+        data,
+        names=names,
+        values="Quantidade",
+        title=f"<b>{title}</b>",
+        color_discrete_sequence=CORES_PALETTE,
+        hole=0.45
+    )
+    fig.update_traces(
+        textposition="inside",
+        textinfo="percent+label",
+        hovertemplate="<b>%{label}</b><br>Qtd: %{value}"
+    )
+    return aplicar_layout_padrao(fig, height=height, show_legend=True)
 
 def gerar_excel(df: pd.DataFrame) -> bytes:
     output = BytesIO()
@@ -166,7 +265,7 @@ def gerar_excel(df: pd.DataFrame) -> bytes:
         df.to_excel(writer, index=False, sheet_name="Alunos")
     return output.getvalue()
 
-# 3. CALLBACKS E COMPONENTES VISUAIS
+# 3. SIDEBAR E FILTROS
 def resetar_filtros():
     for k in list(st.session_state.keys()):
         if k.startswith("f_"):
@@ -180,18 +279,24 @@ def renderizar_sidebar(df: pd.DataFrame):
     col_deficiencia = obter_coluna(df, ["Deficiência", "Deficiencia"])
 
     with st.sidebar:
-        st.markdown(f"👤 **Usuário:** {st.session_state.get('usuario_nome', 'Admin')}")
-        if st.button("🚪 Sair", width="stretch"):
+        st.markdown(f"""
+        <div style="padding: 12px 0 16px 0; border-bottom: 1px solid #E2E8F0; margin-bottom: 16px;">
+            <div style="font-size: 11px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em;">Usuário Conectado</div>
+            <div style="font-size: 16px; font-weight: 700; color: #0F172A; margin-top: 2px;">👤 {st.session_state.get('usuario_nome', 'Admin')}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚪 Encerrar Sessão", width="stretch"):
             st.session_state["autenticado"] = False
             st.session_state["usuario_nome"] = ""
             st.rerun()
-        st.markdown("---")
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("##### 🔍 Busca Rápida")
+        busca = st.text_input("Buscar Aluno", placeholder="Nome ou Matrícula...", key="busca_input", label_visibility="collapsed").strip()
         
-        st.markdown("### 🔍 Busca Direta")
-        busca = st.text_input("Pesquisar por Nome ou Matrícula", placeholder="Digite algo...", key="busca_input").strip()
-        
         st.markdown("---")
-        st.markdown("### 🎛️ Filtros Avançados")
+        st.markdown("##### 🎛️ Filtros Avançados")
         
         colunas_candidatas = [
             ("Curso", "Curso"),
@@ -208,25 +313,30 @@ def renderizar_sidebar(df: pd.DataFrame):
         for label, coluna in colunas_candidatas:
             if coluna in df.columns:
                 opcoes = sorted([str(x) for x in df[coluna].unique() if str(x) != "nan"])
-                filtros[coluna] = st.multiselect(label, opcoes, placeholder="Selecione...", key=f"f_{coluna}")
+                filtros[coluna] = st.multiselect(label, opcoes, placeholder="Todos", key=f"f_{coluna}")
         
         st.markdown("---")
-        st.button("🔄 Limpar todos os filtros", on_click=resetar_filtros, width="stretch")
+        st.button("🔄 Redefinir Filtros", on_click=resetar_filtros, width="stretch")
             
-        if st.button("⚡ Forçar Atualização dos Dados", width="stretch"):
+        if st.button("⚡ Atualizar Base", width="stretch", type="secondary"):
             st.cache_data.clear()
             st.rerun()
             
     return busca, filtros
 
 def renderizar_filtros_ativos(filtros: Dict[str, list], busca: str):
-    filtros_selecionados = [f"**{col}**: {', '.join(map(str, vals))}" for col, vals in filtros.items() if vals]
+    filtros_selecionados = [f"<b>{col}</b>: {', '.join(map(str, vals))}" for col, vals in filtros.items() if vals]
     if busca:
-        filtros_selecionados.insert(0, f"**Busca**: '{busca}'")
+        filtros_selecionados.insert(0, f"<b>Busca</b>: '{busca}'")
         
     if filtros_selecionados:
-        st.info("📌 **Filtros Ativos:** " + " | ".join(filtros_selecionados))
+        st.markdown(f"""
+        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; padding: 10px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 20px;">
+            📌 <b>Filtros Ativos:</b> {' &nbsp;|&nbsp; '.join(filtros_selecionados)}
+        </div>
+        """, unsafe_allow_html=True)
 
+# 4. COMPONENTES VISUAIS PRINCIPAIS
 def renderizar_metricas(df: pd.DataFrame):
     counts_status = df["StatusDashboard"].value_counts() if "StatusDashboard" in df.columns else pd.Series()
     
@@ -242,10 +352,16 @@ def renderizar_metricas(df: pd.DataFrame):
     for i, config in enumerate(METRICAS_CONFIG):
         with cols[i]:
             cor = config["color"]
+            bg = config["bg"]
             st.markdown(f"""
-            <div style="background: white; padding: 18px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-align: center; border-left: 4px solid {cor}; height: 100%;">
-                <div style="font-size: 13px; color: #6B7280; font-weight: 500;">{config['icon']} {config['label']}</div>
-                <div style="font-size: 28px; font-weight: 700; color: {cor}; margin-top: 6px;">{metricas[config['key']]:,}</div>
+            <div class="metric-card" style="border-top: 3px solid {cor};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; font-weight: 600; color: #64748B;">{config['label']}</span>
+                    <span style="background: {bg}; color: {cor}; padding: 4px 8px; border-radius: 8px; font-size: 14px;">{config['icon']}</span>
+                </div>
+                <div style="font-size: 28px; font-weight: 700; color: #0F172A; margin-top: 10px;">
+                    {metricas[config['key']]:,}
+                </div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -267,16 +383,13 @@ def renderizar_indicadores_academicos(df: pd.DataFrame):
             cor = CORES_STATUS[status]
             qtd = indicadores[status]
             pct = percentuais[status]
-            st.markdown(
-                f"""
-                <div style="background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-left: 4px solid {cor}; text-align: center;">
-                    <div style="font-size: 13px; color: #6B7280; font-weight: 500;">{status}</div>
-                    <div style="font-size: 26px; font-weight: 700; color: {cor}; margin-top: 4px;">{pct:.1f}%</div>
-                    <div style="font-size: 12px; color: #6B7280; margin-top: 2px;">{qtd:,} alunos</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            st.markdown(f"""
+            <div class="metric-card" style="border-left: 4px solid {cor};">
+                <div style="font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase;">{status}</div>
+                <div style="font-size: 24px; font-weight: 700; color: {cor}; margin-top: 4px;">{pct:.1f}%</div>
+                <div style="font-size: 13px; color: #94A3B8; margin-top: 2px;">{qtd:,} estudantes</div>
+            </div>
+            """, unsafe_allow_html=True)
 
 def renderizar_analise_situacao(df: pd.DataFrame):
     col_contrato = obter_coluna(df, ["Situacao do contrato", "Situação do contrato"])
@@ -287,7 +400,7 @@ def renderizar_analise_situacao(df: pd.DataFrame):
         
     situacoes_disponiveis = sorted(df[col_contrato].dropna().astype(str).str.strip().unique().tolist())
     situacao_selecionada = st.multiselect(
-        "🔎 Filtrar visualizações desta seção por situação específica:",
+        "🔎 Filtrar situações contratuais nesta seção:",
         options=situacoes_disponiveis,
         placeholder="Todas as situações selecionadas...",
         key="analise_situacoes"
@@ -304,25 +417,25 @@ def renderizar_analise_situacao(df: pd.DataFrame):
     with col1:
         fig = px.bar(
             resumo, x="Situação", y="Quantidade", text="Quantidade",
-            title="Alunos por Situação do Contrato",
+            title="<b>Distribuição por Situação de Contrato</b>",
             color="Situação", color_discrete_sequence=CORES_PALETTE
         )
-        fig.update_traces(textposition="outside")
-        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", height=380, margin=dict(l=20, r=20, t=50, b=20), showlegend=False)
+        fig.update_traces(textposition="outside", marker=dict(opacity=0.9))
+        fig = aplicar_layout_padrao(fig, height=360, show_legend=False)
         st.plotly_chart(fig, width="stretch")
 
     with col2:
         tabela_resumo = resumo.copy()
         tabela_resumo["Percentual"] = tabela_resumo["Percentual"].map(lambda x: f"{x:.1f}%")
-        st.markdown("##### 📊 Distribuição")
-        st.dataframe(tabela_resumo, width="stretch", hide_index=True, height=380)
+        st.markdown("<div style='font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;'>Tabela de Frequência</div>", unsafe_allow_html=True)
+        st.dataframe(tabela_resumo, width="stretch", hide_index=True, height=330)
 
     if col_aluno and col_aluno in df_situacao.columns:
-        st.markdown("#### 🔄 Situação do Contrato × Situação do Aluno")
+        st.markdown("<br><div style='font-size: 16px; font-weight: 600; color: #1E293B;'>🔄 Matriz Cruzada: Situação do Contrato × Situação do Aluno</div>", unsafe_allow_html=True)
         cruzamento_absoluto = pd.crosstab(df_situacao[col_contrato], df_situacao[col_aluno])
         cruzamento_percentual = pd.crosstab(df_situacao[col_contrato], df_situacao[col_aluno], normalize="index") * 100
         
-        tab1, tab2 = st.tabs(["🔢 Valores Absolutos", "📈 Percentual por Situação (%)"])
+        tab1, tab2 = st.tabs(["🔢 Valores Absolutos", "📈 Distribuição Percentual (%)"])
         with tab1:
             st.dataframe(cruzamento_absoluto, width="stretch")
         with tab2:
@@ -356,18 +469,26 @@ def criar_mapa_estados(df: pd.DataFrame):
         hover_name="EstadoNome",
         hover_data={"Estado": True, "Alunos": True, "EstadoNome": False},
         labels={"Alunos": "Alunos", "Estado": "UF"},
-        title="Distribuição de Alunos por Estado",
+        title="<b>Densidade Geográfica de Discentes</b>",
     )
     fig.update_geos(fitbounds="locations", visible=False)
-    fig.update_layout(height=500, margin=dict(l=0, r=0, t=50, b=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(
+        height=480,
+        margin=dict(l=0, r=0, t=40, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter, sans-serif")
+    )
     return fig
 
-# 4. FUNÇÃO PRINCIPAL
+# 5. FUNÇÃO PRINCIPAL
 def main():
     if not renderizar_login():
         return
         
-    with st.spinner("🔄 Carregando dados da planilha..."):
+    injetar_css()
+    
+    with st.spinner("🔄 Carregando dados da planilha institucional..."):
         df = carregar_dados()
     
     if df.empty:
@@ -388,81 +509,90 @@ def main():
         cond_matr = df_filtrado[col_matr].astype(str).str.contains(busca, case=False, na=False) if col_matr else False
         df_filtrado = df_filtrado[cond_nome | cond_matr]
     
-    st.markdown(f'<div><h1 style="display:inline; font-size: 30px; font-weight: 700; color: #1F2937;">🎓 Dashboard Acadêmico</h1> <span style="background: #F3F4F6; padding: 4px 12px; border-radius: 20px; font-size: 14px; color: #6B7280; margin-left: 12px;">{len(df_filtrado):,} registros</span></div><br>', unsafe_allow_html=True)
+    # Cabeçalho Principal Moderno
+    st.markdown(f"""
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1 style="font-size: 26px; font-weight: 800; color: #0F172A; margin: 0;">🎓 Dashboard de Gestão Acadêmica</h1>
+            <p style="font-size: 14px; color: #64748B; margin: 4px 0 0 0;">Monitoramento de discentes, retenção e perfil institucional</p>
+        </div>
+        <span class="custom-badge">📊 {len(df_filtrado):,} discentes filtrados</span>
+    </div>
+    """, unsafe_allow_html=True)
     
     renderizar_filtros_ativos(filtros, busca)
     
     if df_filtrado.empty:
-        st.warning("⚠️ Nenhum aluno encontrado com a combinação de filtros e busca selecionada. Tente ajustar os parâmetros na barra lateral.")
+        st.warning("⚠️ Nenhum aluno encontrado para o conjunto de filtros selecionado. Ajuste os seletores na barra lateral.")
         return
     
     renderizar_metricas(df_filtrado)
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("### 📈 Indicadores Acadêmicos")
+    st.markdown("<div class='section-header'>📈 Indicadores Acadêmicos de Retenção</div>", unsafe_allow_html=True)
     renderizar_indicadores_academicos(df_filtrado)
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("### 🔎 Análise Detalhada de Situação")
+    st.markdown("<div class='section-header'>🔎 Análise Detalhada de Situação Contratual</div>", unsafe_allow_html=True)
     renderizar_analise_situacao(df_filtrado)
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("### 📚 Análise de Cursos e Turmas")
+    st.markdown("<div class='section-header'>📚 Análise de Cursos, Turmas e Ingresso</div>", unsafe_allow_html=True)
     ca1, ca2, ca3 = st.columns(3)
     if "Curso" in df_filtrado.columns:
         ca1.plotly_chart(criar_grafico_barras(df_filtrado, "Curso", "Alunos por Curso", "h"), width="stretch")
     if "Turma" in df_filtrado.columns:
-        ca2.plotly_chart(criar_grafico_barras(df_filtrado, "Turma", "Top Turmas"), width="stretch")
+        ca2.plotly_chart(criar_grafico_barras(df_filtrado, "Turma", "Distribuição por Turma"), width="stretch")
     col_ingresso = obter_coluna(df_filtrado, ["FormaIngresso", "Forma de Ingresso"])
     if col_ingresso:
         ca3.plotly_chart(criar_grafico_pizza(df_filtrado, col_ingresso, "Forma de Ingresso"), width="stretch")
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("### 👤 Perfil Demográfico e Acessibilidade")
+    st.markdown("<div class='section-header'>👤 Perfil Demográfico e Acessibilidade</div>", unsafe_allow_html=True)
     cd1, cd2 = st.columns(2)
     if "FaixaEtaria" in df_filtrado.columns:
         cd1.plotly_chart(criar_grafico_barras(df_filtrado, "FaixaEtaria", "Distribuição por Faixa Etária"), width="stretch")
     
     col_deficiencia = obter_coluna(df_filtrado, ["Deficiência", "Deficiencia"])
     if col_deficiencia:
-        cd2.plotly_chart(criar_grafico_pizza(df_filtrado, col_deficiencia, "Perfil de Acessibilidade / Deficiência"), width="stretch")
+        cd2.plotly_chart(criar_grafico_pizza(df_filtrado, col_deficiencia, "Perfil de Acessibilidade"), width="stretch")
         
     cp1, cp2 = st.columns(2)
     if "Sexo" in df_filtrado.columns:
         cp1.plotly_chart(criar_grafico_pizza(df_filtrado, "Sexo", "Distribuição por Sexo"), width="stretch")
     col_raca = obter_coluna(df_filtrado, ["CorRaca", "Cor/Raça"])
     if col_raca:
-        cp2.plotly_chart(criar_grafico_barras(df_filtrado, col_raca, "Cor/Raça"), width="stretch")
+        cp2.plotly_chart(criar_grafico_barras(df_filtrado, col_raca, "Distribuição por Cor/Raça"), width="stretch")
         
     cp3, cp4 = st.columns(2)
     if "Escolaridade" in df_filtrado.columns:
-        cp3.plotly_chart(criar_grafico_barras(df_filtrado, "Escolaridade", "Escolaridade", "h"), width="stretch")
+        cp3.plotly_chart(criar_grafico_barras(df_filtrado, "Escolaridade", "Nível de Escolaridade", "h"), width="stretch")
     col_prof = obter_coluna(df_filtrado, ["Profissao", "Profissão"])
     if col_prof:
-        cp4.plotly_chart(criar_grafico_barras(df_filtrado, col_prof, "Top 10 Profissões", "h", top_n=10), width="stretch")
-    st.markdown("---")
+        cp4.plotly_chart(criar_grafico_barras(df_filtrado, col_prof, "Top Profissões Declaradas", "h", top_n=10), width="stretch")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("### 🗺️ Distribuição Geográfica")
+    st.markdown("<div class='section-header'>🗺️ Distribuição Geográfica Nacional</div>", unsafe_allow_html=True)
     if "Estado" in df_filtrado.columns and not df_filtrado["Estado"].replace("Não informado", None).dropna().empty:
         fig_mapa = criar_mapa_estados(df_filtrado)
         st.plotly_chart(fig_mapa, width="stretch")
     else:
         st.info("Nenhum dado geográfico disponível para exibir o mapa.")
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("### 📋 Dados Completos")
+    st.markdown("<div class='section-header'>📋 Registros Detalhados & Exportação</div>", unsafe_allow_html=True)
     btn_col1, btn_col2 = st.columns(2)
     
     with btn_col1:
         csv = df_filtrado.to_csv(index=False).encode("utf-8-sig")
-        st.download_button("📥 Exportar para CSV", data=csv, file_name=f"dashboard_{datetime.now():%Y%m%d_%H%M%S}.csv", mime="text/csv", width="stretch")
+        st.download_button("📥 Exportar Relatório CSV", data=csv, file_name=f"dashboard_{datetime.now():%Y%m%d_%H%M%S}.csv", mime="text/csv", width="stretch")
         
     with btn_col2:
-        with st.spinner("Preparando Excel..."):
+        with st.spinner("Gerando arquivo Excel..."):
             dados_excel = gerar_excel(df_filtrado)
-        st.download_button("📊 Exportar para Excel (.xlsx)", data=dados_excel, file_name=f"dashboard_{datetime.now():%Y%m%d_%H%M%S}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", width="stretch")
+        st.download_button("📊 Exportar Relatório Excel (.xlsx)", data=dados_excel, file_name=f"dashboard_{datetime.now():%Y%m%d_%H%M%S}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", width="stretch")
         
-    st.dataframe(df_filtrado, width="stretch", height=400)
+    st.dataframe(df_filtrado, width="stretch", height=420)
 
 if __name__ == "__main__":
     main()
