@@ -74,6 +74,8 @@ def injetar_css_dark():
         footer {visibility: hidden;}
         [data-testid="stStatusWidget"] {display: none;}
         .stAppDeployButton {display: none;}
+        ._profilePreview_gzau3_63 { display: none; }
+        ._link_gzau3_10 { display: none; }
         
         /* Cards de Métricas Dark */
         .metric-card-dark {
