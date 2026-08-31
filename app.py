@@ -74,8 +74,17 @@ def injetar_css_dark():
         footer {visibility: hidden;}
         [data-testid="stStatusWidget"] {display: none;}
         .stAppDeployButton {display: none;}
-        ._profilePreview_gzau3_63 { display: none; }
-        ._link_gzau3_10 { display: none; }
+        [data-testid="appCreatorAvatar"],
+        div[class*="_profileContainer_"],
+        div[class*="_profilePreview_"],
+        div[class*="_viewerBadge_"],
+        div[class*="_profileBadge_"],
+        div[class*="_floatingActions_"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
         
         /* Cards de Métricas Dark */
         .metric-card-dark {
