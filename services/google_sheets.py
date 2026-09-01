@@ -10,7 +10,7 @@ def carregar_planilha():
         "https://www.googleapis.com/auth/drive.readonly"
     ]
     
-    caminho_local = "dashboard-alunos-494616-c0f5bcecc791.json"
+    caminho_local = "dashboard-alunos-494616-0431f808c361.json"
     
     # 1. Se estiver rodando localmente com arquivo físico
     if os.path.exists(caminho_local):
