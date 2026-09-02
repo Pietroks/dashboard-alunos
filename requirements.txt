@@ -4,4 +4,4 @@ plotly
 gspread
 google-auth
 openpyxl
-requirements.txt
+reportlab
