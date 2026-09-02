@@ -134,3 +134,68 @@ def criar_mapa_estados(df: pd.DataFrame) -> px.choropleth:
         font=dict(family="Inter, sans-serif", color="#94A3B8")
     )
     return fig
+
+def criar_grafico_funil_retencao(df: pd.DataFrame) -> px.funnel:
+    """Gera o funil acadêmico de conversão e permanência discente."""
+    total = len(df)
+    ativos = len(df[df["StatusDashboard"] == "ATIVO"])
+    baixo_risco = len(df[(df["StatusDashboard"] == "ATIVO") & (df.get("NivelRiscoEvasao") != "Crítico")])
+    # Estimativa de fluxo regular sem trancamento prévio
+    regulares = len(df[(df["StatusDashboard"] == "ATIVO") & (df.get("ScoreEvasao", 0) == 0)])
+
+    dados_funil = pd.DataFrame({
+        "Etapa": [
+            "1. Matrículas Registradas",
+            "2. Alunos Ativos (Vigentes)",
+            "3. Ativos em Situação Estável",
+            "4. Fluxo Regular Pleno"
+        ],
+        "Discentes": [total, ativos, baixo_risco, regulares]
+    })
+
+    fig = px.funnel(
+        dados_funil,
+        x="Discentes",
+        y="Etapa",
+        title="<b>Funil de Conversão e Permanência Estudantil</b>",
+        color_discrete_sequence=["#38BDF8"]
+    )
+    fig.update_traces(
+        textinfo="value+percent initial",
+        marker=dict(line=dict(width=0))
+    )
+    return aplicar_layout_dark(fig, height=380, show_legend=False)
+
+def criar_grafico_cohort_temporal(df: pd.DataFrame) -> px.bar:
+    """Gera a taxa de sobrevivência discente por ano de turma/ingresso."""
+    if "AnoIngresso" not in df.columns:
+        return None
+
+    # Agrupa por Ano e Status
+    df_tempo = df[df["AnoIngresso"].isin(["2021", "2022", "2023", "2024", "2025", "2026"])].copy()
+    if df_tempo.empty:
+        df_tempo = df.copy()
+
+    crosstab = pd.crosstab(df_tempo["AnoIngresso"], df_tempo["StatusDashboard"], normalize="index") * 100
+    crosstab = crosstab.reset_index().melt(id_vars="AnoIngresso", value_name="Taxa", var_name="Status")
+
+    fig = px.bar(
+        crosstab,
+        x="AnoIngresso",
+        y="Taxa",
+        color="Status",
+        title="<b>Taxa de Retenção e Sobrevivência por Ano de Turma (%)</b>",
+        color_discrete_map={
+            "ATIVO": "#10B981",
+            "TRANCADO": "#F59E0B",
+            "INATIVO": "#EF4444",
+            "DESISTENTE": "#94A3B8"
+        },
+        barmode="stack",
+        text_auto=".1f"
+    )
+    fig.update_layout(
+        yaxis=dict(title="Percentual (%)", range=[0, 105]),
+        xaxis=dict(title="Ano da Turma / Ingresso")
+    )
+    return aplicar_layout_dark(fig, height=380, show_legend=True)

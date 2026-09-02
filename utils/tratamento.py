@@ -1,6 +1,30 @@
 import unicodedata
 import pandas as pd
 from typing import Optional, List, Dict
+import re
+
+def extrair_ano_ingresso(turma: str) -> str:
+    """Extrai o ano da turma para análise temporal de cohorts."""
+    if not turma or str(turma).strip() in ["", "Não informado", "nan", "None", "<NA>"]:
+        return "Não informado"
+    s = str(turma).strip()
+    
+    # 1. 4 dígitos começando com 20 (ex: 2021 a 2029)
+    m4 = re.search(r'\b(20[12][0-9])\b', s)
+    if m4:
+        return m4.group(1)
+        
+    # 2. Padrão de código institucional (ex: 1024 -> ano 2024, 2023 -> 2023)
+    m_cod = re.search(r'([0-9]{2})(2[0-9])\b', s)
+    if m_cod:
+        return f"20{m_cod.group(2)}"
+        
+    # 3. Padrão com separador (ex: ADS-23, PED/24, TURMA_22)
+    m2 = re.search(r'[_\-\/\.](2[0-9])\b', s)
+    if m2:
+        return f"20{m2.group(1)}"
+        
+    return "Outros"
 
 def remover_acentos(texto: str) -> str:
     """Remove acentos e caracteres diacríticos para comparação insensível."""
@@ -155,3 +179,46 @@ def classificar_status(row) -> str:
         return "DESISTENTE"
     else:
         return "INATIVO"
+    
+def calcular_score_evasao(row, mapping: Dict[str, Optional[str]]) -> tuple[int, str]:
+    """
+    Calcula um score de risco de evasão (0 a 100) para discentes ativos
+    e retorna o nível de risco e os fatores identificados.
+    """
+    if str(row.get("StatusDashboard", "")).upper() != "ATIVO":
+        return 0, "Baixo"
+
+    score = 0
+    
+    # 1. Indicador PcD / Necessidade de Acessibilidade (+30 pts)
+    col_def = mapping.get("deficiencia")
+    if col_def and str(row.get(col_def, "")).strip().upper() not in ["", "NÃO", "NAO", "NENHUMA", "NÃO INFORMADO", "NAN", "NONE"]:
+        score += 30
+
+    # 2. Forma de Ingresso com histórico de mobilidade/atrito (+25 pts)
+    col_ing = mapping.get("ingresso")
+    if col_ing and row.get(col_ing) in ["Transferência", "Reingresso / Reabertura", "Segunda Graduação / Portador de Diploma"]:
+        score += 25
+
+    # 3. Faixa Etária de maior vulnerabilidade a conciliação trabalho/estudo (+20 pts)
+    faixa = str(row.get("FaixaEtaria", ""))
+    if faixa in ["35–44 anos", "45–54 anos", "55+ anos"]:
+        score += 20
+
+    # 4. Situação Contratual com observações ou pendências (+25 pts)
+    col_contrato = mapping.get("contrato")
+    if col_contrato:
+        contrato_txt = str(row.get(col_contrato, "")).upper()
+        if any(term in contrato_txt for term in ["PENDENTE", "REABERTO", "CONDICIONAL", "RENOVAÇÃO", "RENOVACAO"]):
+            score += 25
+
+    score = min(score, 100)
+
+    if score >= 60:
+        nivel = "Crítico"
+    elif score >= 35:
+        nivel = "Moderado"
+    else:
+        nivel = "Baixo"
+
+    return score, nivel

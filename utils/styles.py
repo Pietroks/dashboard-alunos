@@ -28,13 +28,19 @@ def injetar_css_dark():
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        /* 1. Header Transparente: permite que o botão de abrir/fechar sidebar (stSidebarCollapsedControl) fique visível */
+        /* Destaque visual para seleção de texto (Ctrl + A visível) */
+        ::selection {
+            background-color: #38BDF8 !important;
+            color: #0F172A !important;
+        }
+
+        /* 1. Header Transparente */
         header[data-testid="stHeader"] {
             background-color: transparent !important;
             z-index: 100 !important;
         }
 
-        /* Mantém o botão de toggle/reabertura da sidebar visível e estilizado em Dark Mode */
+        /* Botão de toggle/reabertura da sidebar */
         [data-testid="stSidebarCollapsedControl"] {
             display: flex !important;
             visibility: visible !important;
@@ -50,13 +56,12 @@ def injetar_css_dark():
             color: #38BDF8 !important;
         }
 
-        /* 2. Oculta apenas menus de configuração, deploy e fork */
+        /* 2. Oculta apenas menus de configuração e deploy */
         #MainMenu {visibility: hidden !important; display: none !important;}
         .stAppDeployButton {display: none !important;}
         footer {visibility: hidden !important; display: none !important;}
         [data-testid="stStatusWidget"] {display: none !important;}
 
-        /* Oculta badges e avatar do Streamlit Community Cloud */
         [data-testid="appCreatorAvatar"],
         div[class*="_profileContainer_"],
         div[class*="_profilePreview_"],
@@ -81,19 +86,29 @@ def injetar_css_dark():
             color: #F8FAFC;
         }
         
-        /* 5. Sidebar Dark */
+        /* 5. Sidebar Dark (sem aplicar regra universal que quebra inputs) */
         [data-testid="stSidebar"] {
             background-color: #1E293B;
             border-right: 1px solid #334155;
         }
-        [data-testid="stSidebar"] * {
-            color: #F1F5F9 !important;
+        [data-testid="stSidebar"] p, 
+        [data-testid="stSidebar"] span, 
+        [data-testid="stSidebar"] label {
+            color: #F1F5F9;
         }
 
-        /* 6. Campos de Entrada com Alto Contraste */
-        div[data-baseweb="input"] input {
+        /* 6. Campos de Entrada (Inputs e Selectbox) com Foco e Seleção Liberados */
+        input, textarea {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            pointer-events: auto !important;
+        }
+
+        div[data-baseweb="input"] input,
+        div[data-baseweb="base-input"] input {
             color: #F8FAFC !important;
             background-color: #0F172A !important;
+            caret-color: #38BDF8 !important;
         }
         
         /* 7. Cards de Métricas Dark */
