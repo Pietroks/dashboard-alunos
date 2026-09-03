@@ -41,9 +41,6 @@ def sincronizar_e_processar_dados() -> pd.DataFrame:
     for tentativa in range(max_tentativas):
         try:
             df = carregar_planilha()
-            st.write("Valores reais na coluna Contrato:", df[mapping["contrato"]].value_counts().to_dict())
-            if mapping.get("aluno"):
-                st.write("Valores reais na coluna Situação Aluno:", df[mapping["aluno"]].value_counts().to_dict())
             mapping = get_column_mapping(df)
 
             colunas_texto = [c for c in df.select_dtypes(include=["object", "category"]).columns if c != mapping.get("nascimento")]
@@ -217,8 +214,9 @@ def main():
     st.markdown("<br><div class='section-header-dark'>🔎 Análise Detalhada de Situação Contratual</div>", unsafe_allow_html=True)
     renderizar_analise_situacao(df_filtrado, mapping)
 
-    st.markdown("<div class='section-header-dark'>📚 Análise de Cursos, Turmas e Ingresso</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header-dark'>📚 Análise de Cursos, Turmas e Desempenho Acadêmico</div>", unsafe_allow_html=True)
     col_c1, col_c2 = st.columns(2)
+    
     with col_c1:
         tab_curso, tab_turma = st.tabs(["🎓 Top Cursos", "👥 Top Turmas"])
         with tab_curso:
@@ -235,11 +233,27 @@ def main():
                 )
                 
     with col_c2:
-        if mapping.get("ingresso") and mapping["ingresso"] in df_filtrado.columns:
-            st.plotly_chart(
-                criar_grafico_pizza(df_filtrado, mapping["ingresso"], "Distribuição por Forma de Ingresso", height=415),
-                width="stretch"
-            )
+        col_ingresso = mapping.get("ingresso")
+        col_aluno = mapping.get("aluno")
+        
+        # Cria abas para Ingresso e Situação Pedagógica
+        tab_pedag, tab_ingr = st.tabs(["🎯 Situação Acadêmica (Aprovações)", "🚪 Forma de Ingresso"])
+        
+        with tab_pedag:
+            if col_aluno and col_aluno in df_filtrado.columns:
+                st.plotly_chart(
+                    criar_grafico_pizza(df_filtrado, col_aluno, "Distribuição por Situação Acadêmica", height=380),
+                    width="stretch"
+                )
+            else:
+                st.info("Dado de situação acadêmica não disponível.")
+
+        with tab_ingr:
+            if col_ingresso and col_ingresso in df_filtrado.columns:
+                st.plotly_chart(
+                    criar_grafico_pizza(df_filtrado, col_ingresso, "Distribuição por Forma de Ingresso", height=380),
+                    width="stretch"
+                )
             
     st.markdown("<br>", unsafe_allow_html=True)
 

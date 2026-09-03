@@ -8,7 +8,16 @@ CORES_STATUS = {
     "DESISTENTE": "#94A3B8"    # Slate Gray
 }
 
-CORES_PALETTE = ["#38BDF8", "#34D399", "#A78BFA", "#FBBF24", "#F472B6", "#22D3EE", "#94A3B8"]
+CORES_PALETTE = [
+    "#38BDF8",  # Azul Claro
+    "#10B981",  # Verde Esmeralda (Destaca Aprovados)
+    "#F59E0B",  # Laranja / Âmbar
+    "#8B5CF6",  # Roxo Executivo
+    "#EC4899",  # Rosa
+    "#64748B",  # Cinza Ardósia
+    "#06B6D4",  # Ciano
+    "#F43F5E"   # Vermelho Rosado
+]
 
 METRICAS_CONFIG = [
     {"key": "total", "label": "Total de Alunos", "icon": "👥", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.12)"},
