@@ -150,6 +150,7 @@ def renderizar_filtros_ativos(filtros: Dict[str, List[Any]], busca: str):
         """, unsafe_allow_html=True)
 
 def renderizar_metricas(df: pd.DataFrame):
+    """Renderiza os 5 cards perfeitamente alinhados com tooltip explicativo nos Inativos."""
     counts = df["StatusDashboard"].value_counts().to_dict() if "StatusDashboard" in df.columns else {}
     metricas = {
         "total": len(df),
@@ -159,18 +160,59 @@ def renderizar_metricas(df: pd.DataFrame):
         "DESISTENTE": counts.get("DESISTENTE", 0),
     }
 
+    # Monta a composição detalhada dos contratos para o tooltip
+    col_contrato = "Situacao do contrato" if "Situacao do contrato" in df.columns else ("Situação do contrato" if "Situação do contrato" in df.columns else None)
+    tooltip_inativo = ""
+    resumo_inativo_curto = ""
+    
+    if col_contrato and metricas["INATIVO"] > 0:
+        df_inativos = df[df["StatusDashboard"] == "INATIVO"]
+        itens_contagem = df_inativos[col_contrato].value_counts().items()
+        
+        # Tooltip completo ao passar o mouse
+        tooltip_inativo = "Composição dos Inativos:\n" + "\n".join([f"• {motivo}: {qtd:,}" for motivo, qtd in itens_contagem])
+        
+        # Subtítulo curto para rodapé do card
+        top3 = df_inativos[col_contrato].value_counts().head(2).to_dict()
+        resumo_inativo_curto = " / ".join([f"{str(m).title()}: {q:,}" for m, q in top3.items()])
+
+    # Legendas de apoio padronizadas para TODOS os cards (garante altura 100% idêntica)
+    subtitulos = {
+        "total": "Base total cadastrada",
+        "ATIVO": "Contratos vigentes",
+        "TRANCADO": "Trancamento formal",
+        "INATIVO": resumo_inativo_curto if resumo_inativo_curto else "Contratos finalizados",
+        "DESISTENTE": "Desistência formal",
+    }
+
     cols = st.columns(len(METRICAS_CONFIG))
     for i, config in enumerate(METRICAS_CONFIG):
         with cols[i]:
             cor, bg = config["color"], config["bg"]
+            key = config["key"]
+            eh_inativo = (key == "INATIVO")
+            
+            # Se for inativo, adiciona o ícone ℹ️ com tooltip nativo no título
+            info_icon = f'<span title="{tooltip_inativo}" style="cursor: help; margin-left: 4px; font-size: 11px;">ℹ️</span>' if eh_inativo else ''
+            card_title = tooltip_inativo if eh_inativo else ''
+
             st.markdown(f"""
-            <div class="metric-card-dark" style="border-top: 3px solid {cor};">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 13px; font-weight: 600; color: #94A3B8;">{config['label']}</span>
-                    <span style="background: {bg}; color: {cor}; padding: 4px 8px; border-radius: 8px; font-size: 14px;">{config['icon']}</span>
+            <div class="metric-card-dark" style="border-top: 3px solid {cor}; min-height: 115px; display: flex; flex-direction: column; justify-content: space-between;" title="{card_title}">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px; font-weight: 600; color: #94A3B8;">
+                            {config['label']}{info_icon}
+                        </span>
+                        <span style="background: {bg}; color: {cor}; padding: 4px 8px; border-radius: 8px; font-size: 14px;">
+                            {config['icon']}
+                        </span>
+                    </div>
+                    <div style="font-size: 26px; font-weight: 700; color: #F8FAFC; margin-top: 6px;">
+                        {metricas[key]:,}
+                    </div>
                 </div>
-                <div style="font-size: 28px; font-weight: 700; color: #F8FAFC; margin-top: 10px;">
-                    {metricas[config['key']]:,}
+                <div style="font-size: 11px; color: #64748B; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {subtitulos[key]}
                 </div>
             </div>
             """, unsafe_allow_html=True)
