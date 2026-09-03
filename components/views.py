@@ -395,26 +395,3 @@ def renderizar_card_aluno_360(aluno: pd.Series, mapping: Dict[str, Any]):
         type="primary"
     )
     st.markdown("<br>", unsafe_allow_html=True)
-    
-def extrair_ano_ingresso(turma: str) -> str:
-    """Extrai o ano da turma para análise temporal de cohorts."""
-    if not turma or str(turma).strip() in ["", "Não informado", "nan", "None", "<NA>"]:
-        return "Não informado"
-    s = str(turma).strip()
-    
-    # 1. 4 dígitos começando com 20 (ex: 2021 a 2029)
-    m4 = re.search(r'\b(20[12][0-9])\b', s)
-    if m4:
-        return m4.group(1)
-        
-    # 2. Padrão de código institucional (ex: 1024 -> ano 2024, 2023 -> 2023)
-    m_cod = re.search(r'([0-9]{2})(2[0-9])\b', s)
-    if m_cod:
-        return f"20{m_cod.group(2)}"
-        
-    # 3. Padrão com separador (ex: ADS-23, PED/24, TURMA_22)
-    m2 = re.search(r'[_\-\/\.](2[0-9])\b', s)
-    if m2:
-        return f"20{m2.group(1)}"
-        
-    return "Outros"
