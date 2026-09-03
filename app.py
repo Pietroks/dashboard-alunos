@@ -41,6 +41,9 @@ def sincronizar_e_processar_dados() -> pd.DataFrame:
     for tentativa in range(max_tentativas):
         try:
             df = carregar_planilha()
+            st.write("Valores reais na coluna Contrato:", df[mapping["contrato"]].value_counts().to_dict())
+            if mapping.get("aluno"):
+                st.write("Valores reais na coluna Situação Aluno:", df[mapping["aluno"]].value_counts().to_dict())
             mapping = get_column_mapping(df)
 
             colunas_texto = [c for c in df.select_dtypes(include=["object", "category"]).columns if c != mapping.get("nascimento")]
