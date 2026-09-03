@@ -145,7 +145,7 @@ def main():
             with c_busca:
                 termo_ficha = st.text_input(
                     "Digite o Nome ou Matrícula do aluno:",
-                    placeholder="Ex: Pietro ou 17346...",
+                    placeholder="Ex: Jão ou 17346...",
                     key="termo_ficha"
                 ).strip()
             with c_limpar:
