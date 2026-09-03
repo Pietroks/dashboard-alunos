@@ -1,23 +1,22 @@
 import streamlit as st
 
+# Paleta de Cores e Identidade Visual (Dark Mode)
 CORES_STATUS = {
-    "ATIVO": "#10B981",       # Verde
-    "FORMADO": "#8B5CF6",     # Roxo Executivo / Destaque Conclusão
-    "TRANCADO": "#F59E0B",     # Laranja
-    "INATIVO": "#EF4444",      # Vermelho
-    "DESISTENTE": "#94A3B8"    # Cinza
+    "ATIVO": "#10B981",       # Emerald Green
+    "TRANCADO": "#F59E0B",     # Amber Orange
+    "INATIVO": "#EF4444",      # Rose Red
+    "DESISTENTE": "#94A3B8"    # Slate Gray
 }
+
+CORES_PALETTE = ["#38BDF8", "#34D399", "#A78BFA", "#FBBF24", "#F472B6", "#22D3EE", "#94A3B8"]
 
 METRICAS_CONFIG = [
     {"key": "total", "label": "Total de Alunos", "icon": "👥", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.12)"},
     {"key": "ATIVO", "label": "Alunos Ativos", "icon": "✅", "color": CORES_STATUS["ATIVO"], "bg": "rgba(16, 185, 129, 0.12)"},
-    {"key": "FORMADO", "label": "Concluídos / Formados", "icon": "🎓", "color": CORES_STATUS["FORMADO"], "bg": "rgba(139, 92, 246, 0.12)"},
     {"key": "TRANCADO", "label": "Trancados", "icon": "⏸️", "color": CORES_STATUS["TRANCADO"], "bg": "rgba(245, 158, 11, 0.12)"},
     {"key": "INATIVO", "label": "Inativos", "icon": "❌", "color": CORES_STATUS["INATIVO"], "bg": "rgba(239, 68, 68, 0.12)"},
     {"key": "DESISTENTE", "label": "Desistentes", "icon": "🚫", "color": CORES_STATUS["DESISTENTE"], "bg": "rgba(148, 163, 184, 0.12)"},
 ]
-
-CORES_PALETTE = ["#38BDF8", "#34D399", "#A78BFA", "#FBBF24", "#F472B6", "#22D3EE", "#94A3B8"]
 
 def injetar_css_dark():
     """Injeta as regras de CSS para estilização completa no modo Dark com suporte a reabertura de sidebar."""
