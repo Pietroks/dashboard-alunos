@@ -32,8 +32,11 @@ logger = logging.getLogger(__name__)
 SNAPSHOT_PATH = "dados_snapshot.parquet"
 
 def sincronizar_e_processar_dados() -> pd.DataFrame:
-    """Executa o pipeline completo via API do Google Sheets e grava snapshot em Parquet."""
-    for i in range(2):
+    """Executa o pipeline via Google Sheets com proteção contra cota 429 e fallback local."""
+    max_tentativas = 3
+    tempo_espera = 5
+
+    for tentativa in range(max_tentativas):
         try:
             df = carregar_planilha()
             mapping = get_column_mapping(df)
@@ -59,14 +62,25 @@ def sincronizar_e_processar_dados() -> pd.DataFrame:
             df["ScoreEvasao"] = [r[0] for r in resultados_score]
             df["NivelRiscoEvasao"] = [r[1] for r in resultados_score]
 
+            # Grava o snapshot Parquet
             df.to_parquet(SNAPSHOT_PATH, index=False, engine="pyarrow")
             st.session_state["ultima_sincronizacao"] = datetime.now().strftime("%d/%m/%Y às %H:%M:%S")
             return df
+
         except Exception as e:
-            if i == 1:
-                st.error(f"❌ Erro de conexão com a planilha: {e}")
-                return pd.DataFrame()
-            time.sleep(1)
+            erro_str = str(e)
+            if "429" in erro_str:
+                if tentativa < max_tentativas - 1:
+                    time.sleep(tempo_espera * (tentativa + 1))
+                    continue
+            
+            # Se falhar todas as tentativas, tenta recorrer ao arquivo Parquet existente
+            if os.path.exists(SNAPSHOT_PATH):
+                st.warning("⚠️ Limite de requisições do Google atingido temporariamente. Exibindo dados da última sincronização válida.")
+                return pd.read_parquet(SNAPSHOT_PATH, engine="pyarrow")
+            
+            st.error(f"❌ Erro de conexão com a planilha do Google: {e}")
+            return pd.DataFrame()
 
 @st.cache_data(ttl=None)
 def obter_dados(forcar_sincronizacao: bool = False) -> pd.DataFrame:
