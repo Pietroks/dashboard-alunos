@@ -3,6 +3,7 @@ import os
 import logging
 import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from io import BytesIO
 import pandas as pd
 
@@ -30,6 +31,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SNAPSHOT_PATH = "dados_snapshot.parquet"
+FUSO_BR = ZoneInfo("America/Sao_Paulo")
 
 def sincronizar_e_processar_dados() -> pd.DataFrame:
     """Executa o pipeline via Google Sheets com proteção contra cota 429 e fallback local."""
@@ -64,7 +66,8 @@ def sincronizar_e_processar_dados() -> pd.DataFrame:
 
             # Grava o snapshot Parquet
             df.to_parquet(SNAPSHOT_PATH, index=False, engine="pyarrow")
-            st.session_state["ultima_sincronizacao"] = datetime.now().strftime("%d/%m/%Y às %H:%M:%S")
+            mtime = os.path.getmtime(SNAPSHOT_PATH)
+            st.session_state["ultima_sincronizacao"] = datetime.fromtimestamp(mtime, tz=FUSO_BR).strftime("%d/%m/%Y às %H:%M:%S")
             return df
 
         except Exception as e:
@@ -90,7 +93,7 @@ def obter_dados(forcar_sincronizacao: bool = False) -> pd.DataFrame:
             df = pd.read_parquet(SNAPSHOT_PATH, engine="pyarrow")
             if "ultima_sincronizacao" not in st.session_state:
                 mtime = os.path.getmtime(SNAPSHOT_PATH)
-                st.session_state["ultima_sincronizacao"] = datetime.fromtimestamp(mtime).strftime("%d/%m/%Y às %H:%M:%S")
+                st.session_state["ultima_sincronizacao"] = datetime.now(FUSO_BR).strftime("%d/%m/%Y às %H:%M:%S")
             return df
         except Exception as e:
             logger.warning(f"Falha ao ler snapshot parquet ({e}), reprocessando via API...")
