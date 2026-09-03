@@ -203,7 +203,7 @@ def renderizar_metricas(df: pd.DataFrame):
                         <span style="font-size: 13px; font-weight: 600; color: #94A3B8;">
                             {config['label']}{info_icon}
                         </span>
-                        <span style="background: {bg}; color: {cor}; padding: 4px 8px; border-radius: 8px; font-size: 14px;">
+                        <span class="icon-box" style="background: {bg}; color: {cor};">
                             {config['icon']}
                         </span>
                     </div>
