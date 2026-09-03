@@ -154,6 +154,7 @@ def renderizar_metricas(df: pd.DataFrame):
     metricas = {
         "total": len(df),
         "ATIVO": counts.get("ATIVO", 0),
+        "FORMADO": counts.get("FORMADO", 0),
         "TRANCADO": counts.get("TRANCADO", 0),
         "INATIVO": counts.get("INATIVO", 0),
         "DESISTENTE": counts.get("DESISTENTE", 0),
@@ -169,7 +170,7 @@ def renderizar_metricas(df: pd.DataFrame):
                     <span style="font-size: 13px; font-weight: 600; color: #94A3B8;">{config['label']}</span>
                     <span style="background: {bg}; color: {cor}; padding: 4px 8px; border-radius: 8px; font-size: 14px;">{config['icon']}</span>
                 </div>
-                <div style="font-size: 28px; font-weight: 700; color: #F8FAFC; margin-top: 10px;">
+                <div style="font-size: 26px; font-weight: 700; color: #F8FAFC; margin-top: 10px;">
                     {metricas[config['key']]:,}
                 </div>
             </div>
@@ -178,16 +179,13 @@ def renderizar_metricas(df: pd.DataFrame):
 def renderizar_indicadores_academicos(df: pd.DataFrame):
     total = len(df)
     counts = df["StatusDashboard"].value_counts().to_dict() if "StatusDashboard" in df.columns else {}
-    indicadores = {
-        "ATIVO": counts.get("ATIVO", 0),
-        "TRANCADO": counts.get("TRANCADO", 0),
-        "INATIVO": counts.get("INATIVO", 0),
-        "DESISTENTE": counts.get("DESISTENTE", 0),
-    }
-    percentuais = {status: (qtd / total * 100) if total > 0 else 0 for status, qtd in indicadores.items()}
+    status_ordem = ["ATIVO", "FORMADO", "TRANCADO", "INATIVO", "DESISTENTE"]
+    
+    indicadores = {s: counts.get(s, 0) for s in status_ordem}
+    percentuais = {s: (qtd / total * 100) if total > 0 else 0 for s, qtd in indicadores.items()}
 
-    cols = st.columns(4)
-    for i, status in enumerate(["ATIVO", "TRANCADO", "INATIVO", "DESISTENTE"]):
+    cols = st.columns(len(status_ordem))
+    for i, status in enumerate(status_ordem):
         with cols[i]:
             cor, qtd, pct = CORES_STATUS[status], indicadores[status], percentuais[status]
             st.markdown(f"""

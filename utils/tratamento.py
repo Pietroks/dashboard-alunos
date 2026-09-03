@@ -167,16 +167,31 @@ def calcular_faixa_etaria(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def classificar_status(row) -> str:
-    """Classificação determinística dos 4 status executivos."""
+    """Classificação determinística dos 5 status executivos."""
     col_contrato = "Situacao do contrato" if "Situacao do contrato" in row else "Situação do contrato"
+    col_aluno = "Situacao do aluno" if "Situacao do aluno" in row else "Situação do aluno"
+    
     contrato = str(row.get(col_contrato, "")).strip().upper()
+    situacao_aluno = str(row.get(col_aluno, "")).strip().upper()
 
+    # 1. Alunos Formados / Concluintes (Verifica tanto o contrato quanto a situação acadêmica)
+    termos_formado = ["FORMADO", "CONCLUIDO", "CONCLUÍDO", "CONCLUSAO", "CONCLUSÃO", "EGRESSO"]
+    if any(t in contrato for t in termos_formado) or any(t in situacao_aluno for t in termos_formado):
+        return "FORMADO"
+
+    # 2. Vínculos vigentes
     if contrato in ["VIGENTE", "ATIVO"]:
         return "ATIVO"
+    
+    # 3. Trancamentos formais
     elif contrato in ["TRANCADO"]:
         return "TRANCADO"
+        
+    # 4. Desistências registradas
     elif contrato in ["DESISTENTE", "DESISTENCIA", "DESISTÊNCIA"]:
         return "DESISTENTE"
+        
+    # 5. Demais situações residuais (Cancelados, Não Renovados, etc.)
     else:
         return "INATIVO"
     
