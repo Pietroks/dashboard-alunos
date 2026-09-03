@@ -137,7 +137,7 @@ def main():
     if len(df_filtrado) == 1:
         aluno_escolhido = df_filtrado.iloc[0]
     else:
-        with st.expander("👤 Consultar Ficha Cadastral 360° de um Aluno Específico", expanded=False):
+        with st.expander("👤 Consultar Ficha Cadastral de um Aluno Específico", expanded=False):
             def limpar_busca_ficha():
                 st.session_state["termo_ficha"] = ""
 
