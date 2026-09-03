@@ -1,9 +1,10 @@
 import streamlit as st
-import pandas as pd
+import os
 import logging
 import time
 from datetime import datetime
 from io import BytesIO
+import pandas as pd
 
 from services.google_sheets import carregar_planilha
 from utils.styles import injetar_css_dark
@@ -23,13 +24,15 @@ from components.views import (
     renderizar_painel_risco_evasao, renderizar_card_aluno_360
 )
 
+# O set_page_config deve ser a primeira chamada Streamlit do arquivo
 st.set_page_config(page_title="Dashboard Acadêmico | Uníntese", page_icon="🎓", layout="wide", initial_sidebar_state="expanded")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@st.cache_data(ttl=300)
-def carregar_dados() -> pd.DataFrame:
-    """Pipeline de extração, limpeza seletiva e enriquecimento."""
+SNAPSHOT_PATH = "dados_snapshot.parquet"
+
+def sincronizar_e_processar_dados() -> pd.DataFrame:
+    """Executa o pipeline completo via API do Google Sheets e grava snapshot em Parquet."""
     for i in range(2):
         try:
             df = carregar_planilha()
@@ -55,12 +58,30 @@ def carregar_dados() -> pd.DataFrame:
             resultados_score = df.apply(lambda row: calcular_score_evasao(row, mapping), axis=1)
             df["ScoreEvasao"] = [r[0] for r in resultados_score]
             df["NivelRiscoEvasao"] = [r[1] for r in resultados_score]
+
+            df.to_parquet(SNAPSHOT_PATH, index=False, engine="pyarrow")
+            st.session_state["ultima_sincronizacao"] = datetime.now().strftime("%d/%m/%Y às %H:%M:%S")
             return df
         except Exception as e:
             if i == 1:
                 st.error(f"❌ Erro de conexão com a planilha: {e}")
                 return pd.DataFrame()
             time.sleep(1)
+
+@st.cache_data(ttl=None)
+def obter_dados(forcar_sincronizacao: bool = False) -> pd.DataFrame:
+    """Retorna dados do snapshot local Parquet ou dispara o pipeline via nuvem."""
+    if not forcar_sincronizacao and os.path.exists(SNAPSHOT_PATH):
+        try:
+            df = pd.read_parquet(SNAPSHOT_PATH, engine="pyarrow")
+            if "ultima_sincronizacao" not in st.session_state:
+                mtime = os.path.getmtime(SNAPSHOT_PATH)
+                st.session_state["ultima_sincronizacao"] = datetime.fromtimestamp(mtime).strftime("%d/%m/%Y às %H:%M:%S")
+            return df
+        except Exception as e:
+            logger.warning(f"Falha ao ler snapshot parquet ({e}), reprocessando via API...")
+
+    return sincronizar_e_processar_dados()
 
 def gerar_excel(df: pd.DataFrame) -> bytes:
     output = BytesIO()
@@ -72,8 +93,11 @@ def main():
     if not renderizar_login(): return
     injetar_css_dark()
 
-    with st.spinner("🔄 Carregando dados da planilha institucional..."):
-        df = carregar_dados()
+    with st.spinner("⚡ Carregando base otimizada..."):
+        df = obter_dados(forcar_sincronizacao=st.session_state.get("disparar_sincronizacao", False))
+        if st.session_state.get("disparar_sincronizacao"):
+            st.session_state["disparar_sincronizacao"] = False
+
     if df.empty: return
 
     mapping = get_column_mapping(df)
@@ -110,7 +134,6 @@ def main():
 
     aluno_escolhido = None
 
-    # Se a busca geral isolou 1 único aluno, seleciona direto
     if len(df_filtrado) == 1:
         aluno_escolhido = df_filtrado.iloc[0]
     else:
@@ -122,7 +145,7 @@ def main():
             with c_busca:
                 termo_ficha = st.text_input(
                     "Digite o Nome ou Matrícula do aluno:",
-                    placeholder="Ex: Jão ou 17346...",
+                    placeholder="Ex: Pietro ou 17346...",
                     key="termo_ficha"
                 ).strip()
             with c_limpar:

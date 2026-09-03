@@ -1,14 +1,12 @@
 import streamlit as st
 import pandas as pd
 import hashlib
-import time
 import plotly.express as px
 from typing import Dict, List, Any, Tuple
 from services.auth import inicializar_banco, verificar_credenciais
 from utils.styles import injetar_css_dark, CORES_STATUS, CORES_PALETTE, METRICAS_CONFIG
 from components.charts import aplicar_layout_dark
 from utils.relatorios import gerar_ficha_aluno_pdf
-import re
 
 # Chave secreta interna para assinar o token de sessão local
 SECRET_SALT = "unintese_dashboard_secret_key_2026"
@@ -21,7 +19,6 @@ def renderizar_login() -> bool:
     """Gerencia a autenticação persistente via st.session_state e st.query_params."""
     inicializar_banco()
 
-    # 1. Recupera parâmetros da URL se a página foi recarregada (F5)
     params = st.query_params
     user_param = params.get("user")
     name_param = params.get("name")
@@ -38,7 +35,6 @@ def renderizar_login() -> bool:
         st.session_state["autenticado"] = False
         st.session_state["usuario_nome"] = ""
 
-    # 2. Se não estiver autenticado, exibe a tela de login
     if not st.session_state["autenticado"]:
         injetar_css_dark()
         _, col2, _ = st.columns([1, 1.2, 1])
@@ -61,7 +57,6 @@ def renderizar_login() -> bool:
                     nome = verificar_credenciais(usuario, senha)
                     if nome:
                         token = gerar_token_sessao(usuario, nome)
-                        # Salva na sessão e na URL
                         st.session_state["autenticado"] = True
                         st.session_state["usuario_nome"] = nome
                         st.session_state["usuario_login"] = usuario
@@ -125,14 +120,24 @@ def renderizar_sidebar(df: pd.DataFrame, mapping: Dict[str, Any]) -> Tuple[str, 
         st.markdown("---")
         st.button("🔄 Limpar Filtros", on_click=resetar_filtros, width="stretch")
 
-        if st.button("⚡ Atualizar Dados", width="stretch", type="secondary"):
+        # Exibe status e timestamp da última sincronização
+        ts_sinc = st.session_state.get("ultima_sincronizacao", "Não registrada")
+        st.markdown(f"""
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; padding: 10px; border-radius: 8px; margin-top: 12px; margin-bottom: 8px;">
+            <div style="font-size: 10px; color: #64748B; font-weight: 600; text-transform: uppercase;">Última Sincronização</div>
+            <div style="font-size: 12px; color: #38BDF8; font-weight: 500; margin-top: 2px;">🕒 {ts_sinc}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        def disparar_sync():
+            st.session_state["disparar_sincronizacao"] = True
             st.cache_data.clear()
-            st.rerun()
+
+        st.button("⚡ Sincronizar Planilha em Nuvem", on_click=disparar_sync, width="stretch", type="secondary")
 
     return busca, filtros
 
 def renderizar_filtros_ativos(filtros: Dict[str, List[Any]], busca: str):
-    """Exibe badges informativos dos filtros aplicados."""
     filtros_selecionados = [f"<b>{col}</b>: {', '.join(map(str, vals))}" for col, vals in filtros.items() if vals]
     if busca:
         filtros_selecionados.insert(0, f"<b>Busca</b>: '{busca}'")
@@ -145,7 +150,6 @@ def renderizar_filtros_ativos(filtros: Dict[str, List[Any]], busca: str):
         """, unsafe_allow_html=True)
 
 def renderizar_metricas(df: pd.DataFrame):
-    """Renderiza os 5 cards de contagem geral."""
     counts = df["StatusDashboard"].value_counts().to_dict() if "StatusDashboard" in df.columns else {}
     metricas = {
         "total": len(df),
@@ -172,7 +176,6 @@ def renderizar_metricas(df: pd.DataFrame):
             """, unsafe_allow_html=True)
 
 def renderizar_indicadores_academicos(df: pd.DataFrame):
-    """Renderiza indicadores percentuais de retenção."""
     total = len(df)
     counts = df["StatusDashboard"].value_counts().to_dict() if "StatusDashboard" in df.columns else {}
     indicadores = {
@@ -196,7 +199,6 @@ def renderizar_indicadores_academicos(df: pd.DataFrame):
             """, unsafe_allow_html=True)
 
 def renderizar_analise_situacao(df: pd.DataFrame, mapping: Dict[str, Any]):
-    """Renderiza a matriz contratual e cruzamento com situação acadêmica."""
     col_contrato = mapping.get("contrato")
     col_aluno = mapping.get("aluno")
     if not col_contrato:
@@ -244,11 +246,9 @@ def renderizar_analise_situacao(df: pd.DataFrame, mapping: Dict[str, Any]):
             st.dataframe(cruzamento_absoluto, width="stretch")
         with tab2:
             st.dataframe(cruzamento_percentual.map(lambda x: f"{x:.1f}%"), width="stretch")
-            
+
 def renderizar_painel_risco_evasao(df: pd.DataFrame, mapping: Dict[str, Any]):
-    """Renderiza a seção executiva de análise preditiva de evasão para alunos ativos."""
     df_ativos = df[df["StatusDashboard"] == "ATIVO"].copy()
-    
     if df_ativos.empty:
         return
 
@@ -256,7 +256,6 @@ def renderizar_painel_risco_evasao(df: pd.DataFrame, mapping: Dict[str, Any]):
     moderados = df_ativos[df_ativos["NivelRiscoEvasao"] == "Moderado"]
     baixos = df_ativos[df_ativos["NivelRiscoEvasao"] == "Baixo"]
     
-    # Cabeçalho com popover nativo de explicação (?)
     col_titulo, col_info = st.columns([0.96, 0.04])
     with col_titulo:
         st.markdown("<div class='section-header-dark' style='margin-top: 0;'>🎯 Análise Preditiva de Risco de Evasão (Alunos Ativos)</div>", unsafe_allow_html=True)
@@ -316,9 +315,8 @@ def renderizar_painel_risco_evasao(df: pd.DataFrame, mapping: Dict[str, Any]):
                 width="stretch",
                 hide_index=True
             )
-            
+
 def renderizar_card_aluno_360(aluno: pd.Series, mapping: Dict[str, Any]):
-    """Exibe um Card Executivo individual com a visão 360 do aluno e botão de PDF."""
     nome = aluno.get(mapping.get("nome", "Nome"), "Não informado")
     matricula = aluno.get(mapping.get("matricula", "Matrícula"), "Não informado")
     curso = aluno.get("Curso", "Não informado")
@@ -385,7 +383,6 @@ def renderizar_card_aluno_360(aluno: pd.Series, mapping: Dict[str, Any]):
     </div>
     """, unsafe_allow_html=True)
 
-    # Botão de exportação da ficha em PDF institucional
     pdf_bytes = gerar_ficha_aluno_pdf(aluno, mapping)
     st.download_button(
         label=f"📄 Baixar Ficha Cadastral Oficial (PDF) - {matricula}",
