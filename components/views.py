@@ -3,7 +3,6 @@ import pandas as pd
 import hashlib
 import hmac
 import time
-import extra_streamlit_components as stx
 import plotly.express as px
 from typing import Dict, List, Any, Tuple
 from services.auth import inicializar_banco, verificar_credenciais
