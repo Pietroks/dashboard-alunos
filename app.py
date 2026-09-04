@@ -17,13 +17,15 @@ from utils.tratamento import (
 from utils.relatorios import gerar_relatorio_executivo_pdf
 from components.charts import (
     criar_grafico_barras, criar_grafico_pizza, criar_mapa_estados,
-    criar_grafico_funil_retencao, criar_grafico_cohort_temporal
+    criar_grafico_funil_retencao, criar_grafico_cohort_temporal,
+    criar_grafico_sankey_fluxo
 )
 from components.views import (
     renderizar_login, renderizar_sidebar, renderizar_filtros_ativos,
     renderizar_metricas, renderizar_indicadores_academicos, renderizar_analise_situacao,
     renderizar_painel_risco_evasao, renderizar_card_aluno_360
 )
+from services.query_engine import consultar_dados_duckdb
 
 # O set_page_config deve ser a primeira chamada Streamlit do arquivo
 st.set_page_config(page_title="Dashboard Acadêmico | Uníntese", page_icon="🎓", layout="wide", initial_sidebar_state="expanded")
@@ -120,16 +122,26 @@ def main():
     mapping = get_column_mapping(df)
     busca, filtros = renderizar_sidebar(df, mapping)
     
-    df_filtrado = df.copy()
-    for col, vals in filtros.items():
-        if vals and col in df_filtrado.columns:
-            df_filtrado = df_filtrado[df_filtrado[col].isin(vals)]
-
-    if busca:
-        condicoes = [df_filtrado[mapping[k]].astype(str).str.contains(busca, case=False, na=False) 
-                     for k in ["nome", "matricula"] if mapping.get(k) and mapping[k] in df_filtrado.columns]
-        if condicoes:
-            df_filtrado = df_filtrado[pd.concat(condicoes, axis=1).any(axis=1)]
+    if os.path.exists(SNAPSHOT_PATH):
+        df_filtrado = consultar_dados_duckdb(
+            parquet_path=SNAPSHOT_PATH,
+            filtros=filtros,
+            busca=busca,
+            mapping=mapping
+        )
+    else:
+        # Fallback de segurança para memória
+        df_filtrado = df.copy()
+        for col, vals in filtros.items():
+            if vals and col in df_filtrado.columns:
+                df_filtrado = df_filtrado[df_filtrado[col].isin(vals)]
+        if busca:
+            mascara = pd.Series(False, index=df_filtrado.index)
+            for k in ["nome", "matricula"]:
+                col = mapping.get(k)
+                if col and col in df_filtrado.columns:
+                    mascara |= df_filtrado[col].astype(str).str.contains(busca, case=False, na=False)
+            df_filtrado = df_filtrado[mascara]
 
     st.markdown(f"""
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -211,6 +223,16 @@ def main():
     st.markdown("<br>", unsafe_allow_html=True)
     renderizar_painel_risco_evasao(df_filtrado, mapping)
 
+    col_ingresso = mapping.get("ingresso")
+    if col_ingresso and col_ingresso in df_filtrado.columns:
+        st.markdown("<br><div class='section-header-dark'>🌊 Matriz de Transição e Churn Discente</div>", unsafe_allow_html=True)
+        fig_sankey = criar_grafico_sankey_fluxo(df_filtrado, col_ingresso)
+        if fig_sankey:
+            st.plotly_chart(fig_sankey, width="stretch")
+        else:
+            st.info("Dados insuficientes para gerar a matriz de fluxo discente.")
+    # -------------------------------------------------------------------------
+
     st.markdown("<br><div class='section-header-dark'>🔎 Análise Detalhada de Situação Contratual</div>", unsafe_allow_html=True)
     renderizar_analise_situacao(df_filtrado, mapping)
 
@@ -289,7 +311,25 @@ def main():
             width="stretch"
         )
 
-    st.dataframe(df_filtrado, width="stretch", height=420)
+    st.dataframe(
+        df_filtrado,
+        column_config={
+            "ScoreEvasao": st.column_config.ProgressColumn(
+                "Score de Risco",
+                help="Pontuação calculada de propensão à evasão",
+                format="%d pts",
+                min_value=0,
+                max_value=100,
+            ),
+            "StatusDashboard": st.column_config.TextColumn(
+                "Status Executivo",
+                help="Vínculo institucional consolidado"
+            ),
+        },
+        use_container_width=True,
+        height=450,
+        hide_index=True
+    )
 
 if __name__ == "__main__":
     main()

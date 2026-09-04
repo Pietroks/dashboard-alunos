@@ -1,6 +1,7 @@
 import plotly.express as px
 import pandas as pd
 from utils.styles import CORES_PALETTE
+import plotly.graph_objects as go
 
 def aplicar_layout_dark(fig, height: int = 380, show_legend: bool = True):
     """Padronização de layout Plotly para modo escuro."""
@@ -199,3 +200,85 @@ def criar_grafico_cohort_temporal(df: pd.DataFrame) -> px.bar:
         xaxis=dict(title="Ano da Turma / Ingresso")
     )
     return aplicar_layout_dark(fig, height=380, show_legend=True)
+
+def criar_grafico_sankey_fluxo(df: pd.DataFrame, col_ingresso: str) -> go.Figure:
+    """
+    Gera um diagrama de Sankey conectando:
+    Forma de Ingresso -> Nível de Risco -> Status Final.
+    """
+    if not col_ingresso or col_ingresso not in df.columns:
+        return None
+    if "NivelRiscoEvasao" not in df.columns or "StatusDashboard" not in df.columns:
+        return None
+
+    # Prepara o dataframe removendo nulos nas 3 etapas
+    df_fluxo = df[[col_ingresso, "NivelRiscoEvasao", "StatusDashboard"]].dropna().copy()
+    if df_fluxo.empty:
+        return None
+
+    # Garante rótulos claros para evitar ambiguidades entre etapas
+    df_fluxo["origem"] = df_fluxo[col_ingresso].astype(str).str.strip()
+    df_fluxo["meio"] = "Risco " + df_fluxo["NivelRiscoEvasao"].astype(str).str.strip()
+    df_fluxo["destino"] = "Status: " + df_fluxo["StatusDashboard"].astype(str).str.strip()
+
+    # Identifica todos os nós únicos mantendo a ordem das etapas
+    nos_origem = sorted(df_fluxo["origem"].unique().tolist())
+    nos_meio = sorted(df_fluxo["meio"].unique().tolist())
+    nos_destino = sorted(df_fluxo["destino"].unique().tolist())
+
+    todos_nos = nos_origem + nos_meio + nos_destino
+    mapa_indices = {nome: idx for idx, nome in enumerate(todos_nos)}
+
+    # Etapa 1: Origem -> Meio
+    fluxo_1 = df_fluxo.groupby(["origem", "meio"]).size().reset_index(name="quantidade")
+    # Etapa 2: Meio -> Destino
+    fluxo_2 = df_fluxo.groupby(["meio", "destino"]).size().reset_index(name="quantidade")
+
+    sources = [mapa_indices[r["origem"]] for _, r in fluxo_1.iterrows()] + \
+              [mapa_indices[r["meio"]] for _, r in fluxo_2.iterrows()]
+
+    targets = [mapa_indices[r["meio"]] for _, r in fluxo_1.iterrows()] + \
+              [mapa_indices[r["destino"]] for _, r in fluxo_2.iterrows()]
+
+    values = fluxo_1["quantidade"].tolist() + fluxo_2["quantidade"].tolist()
+
+    # Cores personalizadas para os nós
+    cores_nos = []
+    for no in todos_nos:
+        if "Crítico" in no or "INATIVO" in no:
+            cores_nos.append("#EF4444")      # Vermelho
+        elif "Moderado" in no or "TRANCADO" in no:
+            cores_nos.append("#F59E0B")      # Âmbar / Laranja
+        elif "Baixo" in no or "ATIVO" in no:
+            cores_nos.append("#10B981")      # Verde
+        elif "DESISTENTE" in no:
+            cores_nos.append("#94A3B8")      # Cinza
+        else:
+            cores_nos.append("#38BDF8")      # Azul padrão para ingressos
+
+    # Configura o objeto Sankey
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=18,
+            thickness=16,
+            line=dict(color="#334155", width=0.5),
+            label=todos_nos,
+            color=cores_nos
+        ),
+        link=dict(
+            source=sources,
+            target=targets,
+            value=values,
+            color="rgba(148, 163, 184, 0.22)"  # Linhas semi-transparentes
+        )
+    )])
+
+    fig.update_layout(
+        title="<b>Fluxo Institucional: Ingresso ➔ Classificação de Risco ➔ Situação Final</b>",
+        font=dict(family="Inter, sans-serif", size=11, color="#F8FAFC"),
+        height=430,
+        margin=dict(l=10, r=10, t=40, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)"
+    )
+    return fig

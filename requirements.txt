@@ -6,3 +6,4 @@ google-auth
 openpyxl
 reportlab
 pyarrow
+duckdb>=1.0.0
