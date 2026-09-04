@@ -2,6 +2,11 @@ import duckdb
 import pandas as pd
 from typing import Dict, List, Any
 
+conn = duckdb.connect(database=":memory:")
+# Limita o uso de RAM para não derrubar a instância compartilhada (ex: Streamlit Cloud com 1 GB de limite)
+conn.execute("SET max_memory = '512MB';")
+conn.execute("SET threads = 2;")
+
 def consultar_dados_duckdb(
     parquet_path: str,
     filtros: Dict[str, List[Any]],

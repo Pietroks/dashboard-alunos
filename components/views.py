@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import hashlib
+import hmac
+import time
+import extra_streamlit_components as stx
 import plotly.express as px
 from typing import Dict, List, Any, Tuple
 from services.auth import inicializar_banco, verificar_credenciais
@@ -8,66 +11,81 @@ from utils.styles import injetar_css_dark, CORES_STATUS, CORES_PALETTE, METRICAS
 from components.charts import aplicar_layout_dark
 from utils.relatorios import gerar_ficha_aluno_pdf
 
-# Chave secreta interna para assinar o token de sessão local
-SECRET_SALT = "unintese_dashboard_secret_key_2026"
+def obter_secret_salt() -> str:
+    """Recupera a chave secreta do secrets.toml."""
+    if "SECRET_SALT" in st.secrets:
+        return st.secrets["SECRET_SALT"]
+    return "unintese_dashboard_secret_key_2026"
 
-def gerar_token_sessao(usuario: str, nome: str) -> str:
-    """Gera um hash simples baseado no usuário para validação na URL."""
-    return hashlib.sha256(f"{usuario}:{nome}:{SECRET_SALT}".encode()).hexdigest()[:24]
+def gerar_assinatura_sessao(usuario: str, nome: str) -> str:
+    """Gera assinatura HMAC-SHA256 impossível de falsificar sem o segredo."""
+    chave = obter_secret_salt().encode("utf-8")
+    mensagem = f"{usuario}:{nome}".encode("utf-8")
+    return hmac.new(chave, mensagem, hashlib.sha256).hexdigest()[:24]
 
 def renderizar_login() -> bool:
-    """Gerencia a autenticação persistente via st.session_state e st.query_params."""
+    """Valida a sessão de forma síncrona e instantânea no F5 sem piscar tela de login."""
     inicializar_banco()
 
+    # 1. Recupera parâmetros da URL de forma síncrona
     params = st.query_params
-    user_param = params.get("user")
-    name_param = params.get("name")
-    token_param = params.get("token")
+    user_param = params.get("u")
+    name_param = params.get("n")
+    sig_param = params.get("s")
 
-    if user_param and name_param and token_param:
-        token_esperado = gerar_token_sessao(user_param, name_param)
-        if token_param == token_esperado:
+    # 2. Se houver parâmetros válidos assinados com a chave secreta, autentica no ato
+    if user_param and name_param and sig_param:
+        assinatura_esperada = gerar_assinatura_sessao(user_param, name_param)
+        if hmac.compare_digest(sig_param, assinatura_esperada):
             st.session_state["autenticado"] = True
             st.session_state["usuario_nome"] = name_param
             st.session_state["usuario_login"] = user_param
 
+    # 3. Inicializa estado caso não exista
     if "autenticado" not in st.session_state:
         st.session_state["autenticado"] = False
         st.session_state["usuario_nome"] = ""
+        st.session_state["usuario_login"] = ""
 
-    if not st.session_state["autenticado"]:
-        injetar_css_dark()
-        _, col2, _ = st.columns([1, 1.2, 1])
-        with col2:
-            st.markdown("<br><br>", unsafe_allow_html=True)
-            st.markdown("""
-            <div style="background: #1E293B; padding: 32px; border-radius: 16px; border: 1px solid #334155; box-shadow: 0 8px 30px rgba(0,0,0,0.4); text-align: center;">
-                <span style="font-size: 42px;">🎓</span>
-                <h2 style="font-weight: 700; color: #F8FAFC; margin: 12px 0 4px 0;">Dashboard Acadêmico</h2>
-                <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">Painel Institucional • Acesso Restrito</p>
-            </div>
-            """, unsafe_allow_html=True)
+    # 4. Se já está logado, entra direto no dashboard
+    if st.session_state["autenticado"]:
+        return True
 
-            with st.form("form_login"):
-                usuario = st.text_input("Usuário", placeholder="ex: admin").strip().lower()
-                senha = st.text_input("Senha", type="password", placeholder="••••••••")
-                btn_entrar = st.form_submit_button("Entrar no Painel", width="stretch", type="primary")
+    # 5. Só desenha a tela de login se realmente não houver sessão ativa
+    injetar_css_dark()
+    _, col2, _ = st.columns([1, 1.2, 1])
+    with col2:
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style="background: #1E293B; padding: 32px; border-radius: 16px; border: 1px solid #334155; box-shadow: 0 8px 30px rgba(0,0,0,0.4); text-align: center;">
+            <span style="font-size: 42px;">🎓</span>
+            <h2 style="font-weight: 700; color: #F8FAFC; margin: 12px 0 4px 0;">Dashboard Acadêmico</h2>
+            <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">Painel Institucional • Acesso Restrito</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-                if btn_entrar:
-                    nome = verificar_credenciais(usuario, senha)
-                    if nome:
-                        token = gerar_token_sessao(usuario, nome)
-                        st.session_state["autenticado"] = True
-                        st.session_state["usuario_nome"] = nome
-                        st.session_state["usuario_login"] = usuario
-                        st.query_params["user"] = usuario
-                        st.query_params["name"] = nome
-                        st.query_params["token"] = token
-                        st.rerun()
-                    else:
-                        st.error("❌ Usuário ou senha incorretos.")
-        return False
-    return True
+        with st.form("form_login"):
+            usuario = st.text_input("Usuário", placeholder="ex: admin").strip().lower()
+            senha = st.text_input("Senha", type="password", placeholder="••••••••")
+            btn_entrar = st.form_submit_button("Entrar no Painel", width="stretch", type="primary")
+
+            if btn_entrar:
+                nome = verificar_credenciais(usuario, senha)
+                if nome:
+                    assinatura = gerar_assinatura_sessao(usuario, nome)
+                    st.session_state["autenticado"] = True
+                    st.session_state["usuario_nome"] = nome
+                    st.session_state["usuario_login"] = usuario
+
+                    # Grava os parâmetros assinados
+                    st.query_params["u"] = usuario
+                    st.query_params["n"] = nome
+                    st.query_params["s"] = assinatura
+                    st.rerun()
+                else:
+                    st.error("❌ Usuário ou senha incorretos.")
+
+    return False
 
 def resetar_filtros():
     """Limpa filtros e busca na sessão."""
@@ -91,7 +109,8 @@ def renderizar_sidebar(df: pd.DataFrame, mapping: Dict[str, Any]) -> Tuple[str, 
         if st.button("🚪 Sair do Sistema", width="stretch"):
             st.session_state["autenticado"] = False
             st.session_state["usuario_nome"] = ""
-            st.query_params.clear() 
+            st.session_state["usuario_login"] = ""
+            st.query_params.clear()
             st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -120,7 +139,6 @@ def renderizar_sidebar(df: pd.DataFrame, mapping: Dict[str, Any]) -> Tuple[str, 
         st.markdown("---")
         st.button("🔄 Limpar Filtros", on_click=resetar_filtros, width="stretch")
 
-        # Exibe status e timestamp da última sincronização
         ts_sinc = st.session_state.get("ultima_sincronizacao", "Não registrada")
         st.markdown(f"""
         <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; padding: 10px; border-radius: 8px; margin-top: 12px; margin-bottom: 8px;">
@@ -149,8 +167,8 @@ def renderizar_filtros_ativos(filtros: Dict[str, List[Any]], busca: str):
         </div>
         """, unsafe_allow_html=True)
 
-def renderizar_metricas(df: pd.DataFrame):
-    """Renderiza os 5 cards perfeitamente alinhados com tooltip explicativo nos Inativos."""
+def renderizar_metricas(df: pd.DataFrame, mapping: Dict[str, Any] = None):
+    """Renderiza os 5 cards com suporte a mapping centralizado."""
     counts = df["StatusDashboard"].value_counts().to_dict() if "StatusDashboard" in df.columns else {}
     metricas = {
         "total": len(df),
@@ -160,23 +178,18 @@ def renderizar_metricas(df: pd.DataFrame):
         "DESISTENTE": counts.get("DESISTENTE", 0),
     }
 
-    # Monta a composição detalhada dos contratos para o tooltip
-    col_contrato = "Situacao do contrato" if "Situacao do contrato" in df.columns else ("Situação do contrato" if "Situação do contrato" in df.columns else None)
+    col_contrato = mapping.get("contrato") if mapping else ("Situacao do contrato" if "Situacao do contrato" in df.columns else None)
     tooltip_inativo = ""
     resumo_inativo_curto = ""
     
-    if col_contrato and metricas["INATIVO"] > 0:
+    if col_contrato and col_contrato in df.columns and metricas["INATIVO"] > 0:
         df_inativos = df[df["StatusDashboard"] == "INATIVO"]
         itens_contagem = df_inativos[col_contrato].value_counts().items()
         
-        # Tooltip completo ao passar o mouse
         tooltip_inativo = "Composição dos Inativos:\n" + "\n".join([f"• {motivo}: {qtd:,}" for motivo, qtd in itens_contagem])
-        
-        # Subtítulo curto para rodapé do card
         top3 = df_inativos[col_contrato].value_counts().head(2).to_dict()
         resumo_inativo_curto = " / ".join([f"{str(m).title()}: {q:,}" for m, q in top3.items()])
 
-    # Legendas de apoio padronizadas para TODOS os cards (garante altura 100% idêntica)
     subtitulos = {
         "total": "Base total cadastrada",
         "ATIVO": "Contratos vigentes",
@@ -192,7 +205,6 @@ def renderizar_metricas(df: pd.DataFrame):
             key = config["key"]
             eh_inativo = (key == "INATIVO")
             
-            # Se for inativo, adiciona o ícone ℹ️ com tooltip nativo no título
             info_icon = f'<span title="{tooltip_inativo}" style="cursor: help; margin-left: 4px; font-size: 11px;">ℹ️</span>' if eh_inativo else ''
             card_title = tooltip_inativo if eh_inativo else ''
 
@@ -302,11 +314,11 @@ def renderizar_painel_risco_evasao(df: pd.DataFrame, mapping: Dict[str, Any]):
     with col_titulo:
         st.markdown("<div class='section-header-dark' style='margin-top: 0;'>🎯 Análise Preditiva de Risco de Evasão (Alunos Ativos)</div>", unsafe_allow_html=True)
     with col_info:
-        with st.popover("❔", help="Clique para entender a metodologia do Score"):
+        with st.popover("?", help="Clique para entender a metodologia do Score"):
             st.markdown("""
-            **Metodologia de Triagem de Evasão**
+            **Metodologia de Triagem de Evasão (Discentes Ativos)**
             
-            O score (0 a 100) quantifica a vulnerabilidade com base no histórico da instituição:
+            O score (0 a 100) quantifica a vulnerabilidade na base ativa:
             - **+30 pts:** Demanda de acessibilidade (PcD)
             - **+25 pts:** Ingresso por Transferência ou Reingresso
             - **+25 pts:** Pendência Contratual/Documental

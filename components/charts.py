@@ -211,17 +211,21 @@ def criar_grafico_sankey_fluxo(df: pd.DataFrame, col_ingresso: str) -> go.Figure
     if "NivelRiscoEvasao" not in df.columns or "StatusDashboard" not in df.columns:
         return None
 
-    # Prepara o dataframe removendo nulos nas 3 etapas
     df_fluxo = df[[col_ingresso, "NivelRiscoEvasao", "StatusDashboard"]].dropna().copy()
     if df_fluxo.empty:
         return None
 
-    # Garante rótulos claros para evitar ambiguidades entre etapas
+    # Rotula adequadamente quem não passou pela triagem de alunos ativos
+    def definir_rotulo_risco(row):
+        status = str(row["StatusDashboard"]).upper()
+        if status != "ATIVO":
+            return "Risco: Encerrado/Trancado"
+        return f"Risco: {row['NivelRiscoEvasao']}"
+
     df_fluxo["origem"] = df_fluxo[col_ingresso].astype(str).str.strip()
-    df_fluxo["meio"] = "Risco " + df_fluxo["NivelRiscoEvasao"].astype(str).str.strip()
+    df_fluxo["meio"] = df_fluxo.apply(definir_rotulo_risco, axis=1)
     df_fluxo["destino"] = "Status: " + df_fluxo["StatusDashboard"].astype(str).str.strip()
 
-    # Identifica todos os nós únicos mantendo a ordem das etapas
     nos_origem = sorted(df_fluxo["origem"].unique().tolist())
     nos_meio = sorted(df_fluxo["meio"].unique().tolist())
     nos_destino = sorted(df_fluxo["destino"].unique().tolist())
@@ -229,9 +233,7 @@ def criar_grafico_sankey_fluxo(df: pd.DataFrame, col_ingresso: str) -> go.Figure
     todos_nos = nos_origem + nos_meio + nos_destino
     mapa_indices = {nome: idx for idx, nome in enumerate(todos_nos)}
 
-    # Etapa 1: Origem -> Meio
     fluxo_1 = df_fluxo.groupby(["origem", "meio"]).size().reset_index(name="quantidade")
-    # Etapa 2: Meio -> Destino
     fluxo_2 = df_fluxo.groupby(["meio", "destino"]).size().reset_index(name="quantidade")
 
     sources = [mapa_indices[r["origem"]] for _, r in fluxo_1.iterrows()] + \
@@ -242,21 +244,19 @@ def criar_grafico_sankey_fluxo(df: pd.DataFrame, col_ingresso: str) -> go.Figure
 
     values = fluxo_1["quantidade"].tolist() + fluxo_2["quantidade"].tolist()
 
-    # Cores personalizadas para os nós
     cores_nos = []
     for no in todos_nos:
         if "Crítico" in no or "INATIVO" in no:
-            cores_nos.append("#EF4444")      # Vermelho
+            cores_nos.append("#EF4444")
         elif "Moderado" in no or "TRANCADO" in no:
-            cores_nos.append("#F59E0B")      # Âmbar / Laranja
+            cores_nos.append("#F59E0B")
         elif "Baixo" in no or "ATIVO" in no:
-            cores_nos.append("#10B981")      # Verde
-        elif "DESISTENTE" in no:
-            cores_nos.append("#94A3B8")      # Cinza
+            cores_nos.append("#10B981")
+        elif "DESISTENTE" in no or "Encerrado" in no:
+            cores_nos.append("#94A3B8")
         else:
-            cores_nos.append("#38BDF8")      # Azul padrão para ingressos
+            cores_nos.append("#38BDF8")
 
-    # Configura o objeto Sankey
     fig = go.Figure(data=[go.Sankey(
         node=dict(
             pad=18,
@@ -269,7 +269,7 @@ def criar_grafico_sankey_fluxo(df: pd.DataFrame, col_ingresso: str) -> go.Figure
             source=sources,
             target=targets,
             value=values,
-            color="rgba(148, 163, 184, 0.22)"  # Linhas semi-transparentes
+            color="rgba(148, 163, 184, 0.22)"
         )
     )])
 

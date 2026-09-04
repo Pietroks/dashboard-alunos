@@ -95,7 +95,7 @@ def obter_dados(forcar_sincronizacao: bool = False) -> pd.DataFrame:
             df = pd.read_parquet(SNAPSHOT_PATH, engine="pyarrow")
             if "ultima_sincronizacao" not in st.session_state:
                 mtime = os.path.getmtime(SNAPSHOT_PATH)
-                st.session_state["ultima_sincronizacao"] = datetime.now(FUSO_BR).strftime("%d/%m/%Y às %H:%M:%S")
+                st.session_state["ultima_sincronizacao"] = datetime.fromtimestamp(mtime, tz=FUSO_BR).strftime("%d/%m/%Y às %H:%M:%S")
             return df
         except Exception as e:
             logger.warning(f"Falha ao ler snapshot parquet ({e}), reprocessando via API...")
@@ -204,7 +204,7 @@ def main():
     if aluno_escolhido is not None:
         renderizar_card_aluno_360(aluno_escolhido, mapping)
 
-    renderizar_metricas(df_filtrado)
+    renderizar_metricas(df_filtrado, mapping)
     st.markdown("<br><div class='section-header-dark'>📈 Indicadores Acadêmicos de Retenção</div>", unsafe_allow_html=True)
     renderizar_indicadores_academicos(df_filtrado)
     
@@ -326,7 +326,7 @@ def main():
                 help="Vínculo institucional consolidado"
             ),
         },
-        use_container_width=True,
+        width="stretch",
         height=450,
         hide_index=True
     )
